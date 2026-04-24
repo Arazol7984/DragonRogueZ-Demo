@@ -531,6 +531,7 @@
         });
         const data = await res.json();
 
+        // Skill Label Fix
         if (char === "raditz") {
           document.getElementById("btn-jab").innerText = "RAPID ATTACK";
           document.getElementById("m-btn").innerText = "BEHIND YOU!";
@@ -559,6 +560,7 @@
         const pImg = document.getElementById("p-img");
         const eImg = document.getElementById("e-img");
 
+        // Sprite Switching Logic for Goku
         if (currentPlayer === "goku") {
           if (skill === "jab")
             pImg.src = "/static/images/goku_punch_1-removebg-preview.png";
@@ -597,32 +599,6 @@
             pImg.src = "/static/images/goku_block_success-removebg-preview.png";
         }
 
-        if (currentPlayer === "raditz") {
-          if (skill === "jab") {
-            pImg.src = "/static/images/raditz-punch-1.png";
-            await new Promise((r) => setTimeout(r, 150));
-            pImg.src = "/static/images/raditz-punch-2.png";
-          }
-          if (skill === "meteor") {
-            pImg.src = "/static/images/raditz-vanish-1.png";
-            await new Promise((r) => setTimeout(r, 200));
-            pImg.src = "/static/images/raditz-kick.png";
-          }
-          if (skill === "kamehameha") {
-            pImg.src = "/static/images/raditz-ki-blast-charge.png";
-            pImg.classList.add("ki-active");
-            await new Promise((r) => setTimeout(r, 500));
-            pImg.src = "/static/images/raditz-double-sunday.png";
-          }
-          if (skill === "spirit_bomb") {
-            pImg.src = "/static/images/raditz-split-shot-charge.png";
-            pImg.classList.add("ki-active");
-            await new Promise((r) => setTimeout(r, 700));
-            pImg.src = "/static/images/raditz-split-shot-fire.png";
-          }
-          if (skill === "guard") pImg.src = "/static/images/raditz-block.png";
-        }
-
         if (skill !== "meteor") pImg.classList.add("animate-strike");
 
         try {
@@ -656,18 +632,14 @@
             if (data.enemy_killed) {
               const shopGrid = document.querySelector(".shop-grid");
               shopGrid.innerHTML = data.shop_items
-                .map((item) => {
-                  const charRef = item.id.split("_")[0];
-                  const isLocked =
-                    ["goku", "raditz", "nappa", "vegeta"].includes(charRef) &&
-                    !unlockedList.includes(charRef);
-                  return `
+                .map(
+                  (item) => `
                   <div class="shop-item">
-                    <h3 style="color:var(--scouter-gold)">${isLocked ? "???" : item.name}</h3>
-                    <p style="font-size:0.8rem">${isLocked ? "Locked Data: Missing Biometric." : item.desc}</p>
+                    <h3 style="color:var(--scouter-gold)">${item.name}</h3>
+                    <p style="font-size:0.8rem">${item.desc}</p>
                     <button onclick="buy('${item.id}')">${item.cost} Z</button>
-                  </div>`;
-                })
+                  </div>`,
+                )
                 .join("");
               setTimeout(
                 () =>
@@ -677,13 +649,10 @@
                 1000,
               );
             } else {
-              if (data.enemy_msg.includes("dodged")) {
-                writeLog(`> [LUCKY]: ${data.enemy_msg}`, "cyan");
-              } else {
-                writeLog(`> [COUNTER]: ${data.enemy_msg}`, "red");
-              }
+              writeLog(`> [COUNTER]: ${data.enemy_msg}`, "red");
             }
 
+            // Fix: Reset to standing frame
             setTimeout(() => {
               pImg.classList.remove("animate-strike", "ki-active");
               eImg.classList.remove("animate-hurt");
@@ -691,11 +660,11 @@
                 currentPlayer === "goku"
                   ? "/static/images/goku_standing-removebg-preview.png"
                   : `/static/images/${currentPlayer}-standing.png`;
+              isBusy = false;
             }, 400);
           }, 150);
         } catch (e) {
           writeLog("[ERR]: Scouter link lost.", "red");
-        } finally {
           isBusy = false;
         }
       }
@@ -704,6 +673,8 @@
         if (!data || !data.player || !data.enemy) return;
         const p = data.player;
         const e = data.enemy;
+
+        // PL and Basic Gauges
         document.getElementById("p-pl").innerText = p.pl.toLocaleString();
         document.getElementById("p-hp-bar").style.width =
           (p.hp / p.max_hp) * 100 + "%";
@@ -714,18 +685,6 @@
         document.getElementById("p-name").innerText = p.char_type.toUpperCase();
         document.getElementById("shop-zeni").innerText = p.zeni;
 
-        const pass = document.getElementById("passive-status");
-        if (p.char_type === "goku") {
-          const seg = Math.floor((p.max_hp - p.hp) / p.max_hp / 0.25);
-          pass.innerText =
-            seg > 0 ? `ZENKAI ACTIVE: +${seg * 15}% DMG` : "ZENKAI: READY";
-        } else if (p.char_type === "raditz") {
-          pass.innerText =
-            e.hp / e.max_hp < 0.5
-              ? "CRUELTY: +20% DMG"
-              : "CRUELTY: TARGET TOO HEALTHY";
-        }
-
         document.getElementById("e-pl").innerText = e.pl.toLocaleString();
         document.getElementById("e-hp-bar").style.width =
           (e.hp / e.max_hp) * 100 + "%";
@@ -733,14 +692,9 @@
           `${Math.round(e.hp)} INT`;
         document.getElementById("e-name").innerText = e.name;
 
+        // Enemy Sprite Logic
         const eImg = document.getElementById("e-img");
-        if (e.name.includes("FRIEZASOLDIER")) {
-          eImg.src =
-            e.name === "FRIEZASOLDIER"
-              ? "/static/images/friezasoldier.png"
-              : "/static/images/friezasoldier2.png";
-          eImg.style.transform = "scaleX(-1)";
-        } else if (e.name === "SAIBAMAN") {
+        if (e.name === "SAIBAMAN") {
           eImg.src =
             "/static/images/saibaman_background_img-removebg-preview.png";
           eImg.style.transform = "scaleX(1)";
@@ -770,7 +724,8 @@
         const res = await fetch("/next-enemy", { method: "POST" });
         const data = await res.json();
         document.getElementById("shop-overlay").classList.add("hidden");
-        document.getElementById("wave-tag").innerText = "WAVE " + data.wave;
+        document.getElementById("wave-tag").innerText =
+          "WAVE " + data.player.wave;
         sync(data);
         checkUnlocks();
       }
@@ -780,7 +735,6 @@
         d.className = "log-entry";
         if (c === "red") d.style.color = "var(--scouter-red)";
         else if (c === "green") d.style.color = "var(--scouter-green)";
-        else if (c === "cyan") d.style.color = "var(--scouter-cyan)";
         else if (c === "gold") d.style.color = "var(--scouter-gold)";
         d.innerText = t;
         log.appendChild(d);
