@@ -101,19 +101,20 @@ SAGAS = [
 ENEMY_POOLS = {
     "SAIYAN": {
         "minions": [
-            {"name": "SAIBAMAN",       "base_hp": 300, "hp_scale": 180, "base_pl": 1200, "pl_scale": 1.15},
-            {"name": "FRIEZA SOLDIER", "base_hp": 320, "hp_scale": 200, "base_pl": 1000, "pl_scale": 1.12},
+            # hp_scale and pl_scale kept gentle so Sector 1-9 is beatable without upgrades
+            {"name": "SAIBAMAN",       "base_hp": 280, "hp_scale": 70,  "base_pl": 900,  "pl_scale": 1.08},
+            {"name": "FRIEZA SOLDIER", "base_hp": 300, "hp_scale": 75,  "base_pl": 800,  "pl_scale": 1.06},
         ],
         "bosses": {
-            10: {"name": "RADITZ", "hp": 2400,  "pl": 1500,  "unlock": "raditz"},
-            20: {"name": "NAPPA",  "hp": 6000,  "pl": 4000,  "unlock": "nappa"},
-            30: {"name": "VEGETA", "hp": 25000, "pl": 18000, "unlock": "vegeta"},
+            10: {"name": "RADITZ", "hp": 1800,  "pl": 1200,  "unlock": "raditz"},
+            20: {"name": "NAPPA",  "hp": 5500,  "pl": 3800,  "unlock": "nappa"},
+            30: {"name": "VEGETA", "hp": 22000, "pl": 16000, "unlock": "vegeta"},
         },
     },
     "NAMEK": {
         "minions": [
-            {"name": "NAMEKIAN WARRIOR", "base_hp": 500, "hp_scale": 250, "base_pl": 3000, "pl_scale": 1.18},
-            {"name": "FRIEZA SOLDIER",   "base_hp": 480, "hp_scale": 230, "base_pl": 2800, "pl_scale": 1.15},
+            {"name": "NAMEKIAN WARRIOR", "base_hp": 500, "hp_scale": 160, "base_pl": 2800, "pl_scale": 1.12},
+            {"name": "FRIEZA SOLDIER",   "base_hp": 480, "hp_scale": 150, "base_pl": 2600, "pl_scale": 1.10},
         ],
         "bosses": {
             40: {"name": "DODORIA", "hp": 12000,  "pl": 22000,  "unlock": None},
@@ -173,7 +174,7 @@ class GameState:
         self.update_stats()
         self.hp = self.max_hp
         self.ki = 100
-        self.ki_regen = 5
+        self.ki_regen = 8
         self.ki_gain_mult = 1.0
         self.crit_chance = 0.05
         self.dodge_chance = 0.03
@@ -185,7 +186,7 @@ class GameState:
         self.adrenaline_scale = 0.0
         self.is_guarding = False
         self.status_effects = []
-        self.zeni = 500
+        self.zeni = 850
         self.current_shop = []
         self.enemy = self.spawn_enemy()
 
@@ -244,7 +245,7 @@ class GameState:
 
     def generate_shop(self):
         keys = random.sample(list(ALL_SHOP_ITEMS.keys()), min(6, len(ALL_SHOP_ITEMS)))
-        scale = 1 + self.wave * 0.12
+        scale = 1 + self.wave * 0.07
         self.current_shop = []
         for k in keys:
             item = ALL_SHOP_ITEMS[k].copy()
@@ -268,10 +269,9 @@ init_db()
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _enemy_attack(state):
-    """Process enemy counter-attack. Returns (enemy_msg, game_over)."""
     if random.random() < state.dodge_chance:
         return f"{state.enemy['name']} missed!", False
-    e_base = state.enemy["pl"] * 0.12
+    e_base = state.enemy["pl"] * 0.07
     if state.enemy.get("boss"):
         e_base *= 1.25
     dmg_mult = state.enemy.get("dmg_mult", 1.0)
@@ -302,13 +302,13 @@ def get_roster():
     roster = []
     for char_id, cdata in CHAR_ROSTER.items():
         roster.append({
-            "id":          char_id,
-            "base_pl":     cdata["base_pl"],
-            "base_hp":     cdata["base_hp"],
-            "unlocked":    char_id in unlocked,
+            "id":           char_id,
+            "base_pl":      cdata["base_pl"],
+            "base_hp":      cdata["base_hp"],
+            "unlocked":     char_id in unlocked,
             "sprite_ready": cdata["sprite_set"],
-            "unlock_by":   cdata["unlock_by"],
-            "category":    cdata["category"],
+            "unlock_by":    cdata["unlock_by"],
+            "category":     cdata["category"],
         })
     return jsonify({"roster": roster, "zenkai": zenkai})
 
@@ -333,7 +333,6 @@ def battle_action():
     data = request.get_json()
     skill = data.get("skill", "jab")
 
-    # Passive Ki regen each turn
     state.ki = min(100, state.ki + state.ki_regen)
 
     move = MOVES.get(skill, MOVES["jab"])
@@ -343,20 +342,19 @@ def battle_action():
 
     state.ki -= ki_cost
 
-    # Guard
     if skill == "guard":
         state.is_guarding = True
         state.ki = min(100, state.ki + int(move["ki_gain"] * state.ki_gain_mult))
         enemy_msg, game_over = _enemy_attack(state)
         return jsonify({
-            "message": "GUARDING — incoming damage reduced by 75%",
-            "enemy_msg": enemy_msg,
-            "player": vars(state),
-            "enemy": state.enemy,
+            "message":     "GUARDING — incoming damage reduced by 75%",
+            "enemy_msg":   enemy_msg,
+            "player":      vars(state),
+            "enemy":       state.enemy,
             "enemy_killed": False,
-            "game_over": game_over,
-            "zenkai": False,
-            "shop_items": [],
+            "game_over":   game_over,
+            "zenkai":      False,
+            "shop_items":  [],
         })
 
     state.is_guarding = False
@@ -364,8 +362,7 @@ def battle_action():
     if ki_gain:
         state.ki = min(100, state.ki + ki_gain)
 
-    # Damage calculation
-    raw_dmg = move["base_dmg"] * (1 + state.pl / 450)
+    raw_dmg = move["base_dmg"] * (1 + state.pl / 380)
     if state.adrenaline_scale > 0 and state.max_hp > 0:
         raw_dmg *= 1 + state.adrenaline_scale * (1 - state.hp / state.max_hp)
     raw_dmg *= state.outgoing_damage_mult
@@ -375,19 +372,16 @@ def battle_action():
     if is_crit:
         final_dmg = int(final_dmg * 1.6)
 
-    # SWIFT enemy may dodge the attack
     dodged = state.enemy.get("dodge", 0.0) > 0 and random.random() < state.enemy["dodge"]
     if dodged:
         final_dmg = 0
 
-    # ARMORED enemy reduces damage
     armor = state.enemy.get("armor", 0)
     if armor and final_dmg > 0:
         final_dmg = max(1, final_dmg - armor)
 
     state.enemy["hp"] = max(0, state.enemy["hp"] - final_dmg)
 
-    # Lifesteal
     if final_dmg > 0 and state.lifesteal > 0:
         state.hp = min(state.max_hp, state.hp + int(final_dmg * state.lifesteal))
 
@@ -406,24 +400,24 @@ def battle_action():
     if enemy_killed:
         if state.enemy.get("boss") and state.enemy.get("unlock"):
             save_unlock(state.enemy["unlock"])
-        state.zeni += 100 + state.wave * 25
+        state.zeni += 180 + state.wave * 15
         if state.enemy.get("boss"):
-            state.zeni += 500
+            state.zeni += 600
         zenkai_triggered = state.apply_zenkai()
-        state.pl += int(state.enemy["pl"] * 0.12)
+        state.pl += int(state.enemy["pl"] * 0.18)
         state.generate_shop()
     else:
         enemy_msg, game_over = _enemy_attack(state)
 
     return jsonify({
-        "message":     player_msg,
-        "enemy_msg":   enemy_msg,
-        "player":      vars(state),
-        "enemy":       state.enemy,
+        "message":      player_msg,
+        "enemy_msg":    enemy_msg,
+        "player":       vars(state),
+        "enemy":        state.enemy,
         "enemy_killed": enemy_killed,
-        "game_over":   game_over,
-        "zenkai":      zenkai_triggered,
-        "shop_items":  state.current_shop,
+        "game_over":    game_over,
+        "zenkai":       zenkai_triggered,
+        "shop_items":   state.current_shop,
     })
 
 
