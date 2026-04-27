@@ -76,17 +76,18 @@ CHAR_ROSTER = {
 }
 
 MOVES = {
-    "jab":            {"base_dmg": 60,  "ki_cost": 0,  "ki_gain": 10},
-    "slam":           {"base_dmg": 160, "ki_cost": 15, "ki_gain": 0},
-    "kamehameha":     {"base_dmg": 320, "ki_cost": 30, "ki_gain": 0},
-    "double_sunday":  {"base_dmg": 280, "ki_cost": 30, "ki_gain": 0},
-    "bomber_dx":      {"base_dmg": 340, "ki_cost": 30, "ki_gain": 0},
-    "galick_gun":     {"base_dmg": 360, "ki_cost": 30, "ki_gain": 0},
-    "spirit_bomb":    {"base_dmg": 850, "ki_cost": 80, "ki_gain": 0},
-    "saturday_crash": {"base_dmg": 700, "ki_cost": 80, "ki_gain": 0},
-    "mouth_beam":     {"base_dmg": 800, "ki_cost": 80, "ki_gain": 0},
-    "final_flash":    {"base_dmg": 900, "ki_cost": 80, "ki_gain": 0},
-    "guard":          {"base_dmg": 0,   "ki_cost": 0,  "ki_gain": 5},
+    "jab":            {"base_dmg": 60,  "ki_cost": 0,  "ki_gain": 10, "hp_cap": None},
+    "slam":           {"base_dmg": 160, "ki_cost": 15, "ki_gain": 0,  "hp_cap": None},
+    "kamehameha":     {"base_dmg": 320, "ki_cost": 30, "ki_gain": 0,  "hp_cap": None},
+    "double_sunday":  {"base_dmg": 280, "ki_cost": 30, "ki_gain": 0,  "hp_cap": None},
+    "bomber_dx":      {"base_dmg": 340, "ki_cost": 30, "ki_gain": 0,  "hp_cap": None},
+    "galick_gun":     {"base_dmg": 360, "ki_cost": 30, "ki_gain": 0,  "hp_cap": None},
+    # Ultimates: high damage but capped so they can't one-shot reliably early game
+    "spirit_bomb":    {"base_dmg": 850, "ki_cost": 80, "ki_gain": 0,  "hp_cap": 0.68},
+    "saturday_crash": {"base_dmg": 700, "ki_cost": 80, "ki_gain": 0,  "hp_cap": 0.68},
+    "mouth_beam":     {"base_dmg": 800, "ki_cost": 80, "ki_gain": 0,  "hp_cap": 0.68},
+    "final_flash":    {"base_dmg": 900, "ki_cost": 80, "ki_gain": 0,  "hp_cap": 0.72},
+    "guard":          {"base_dmg": 0,   "ki_cost": 0,  "ki_gain": 5,  "hp_cap": None},
 }
 
 SAGAS = [
@@ -380,6 +381,11 @@ def battle_action():
     if armor and final_dmg > 0:
         final_dmg = max(1, final_dmg - armor)
 
+    # Ultimates are powerful but cannot exceed a % of enemy max HP in one hit
+    cap = move.get("hp_cap")
+    if cap and state.enemy["max_hp"] > 0:
+        final_dmg = min(final_dmg, int(state.enemy["max_hp"] * cap))
+
     state.enemy["hp"] = max(0, state.enemy["hp"] - final_dmg)
 
     if final_dmg > 0 and state.lifesteal > 0:
@@ -439,54 +445,90 @@ def purchase():
 
     state.zeni -= item["cost"]
     s = 1 + state.wave * 0.08
+    detail = ""
 
     if item_id == "senzu":
         state.hp = state.max_hp
         state.status_effects = []
+        detail = "HP fully restored"
     elif item_id == "gravity_x10":
-        state.pl += int(350 * s)
+        gain = int(350 * s)
+        state.pl += gain
         state.hp = max(1, int(state.hp * 0.9))
+        detail = f"PL +{gain:,} (HP cost: -10%)"
     elif item_id == "gravity_x100":
-        state.pl += int(800 * s)
+        gain = int(800 * s)
+        state.pl += gain
+        detail = f"PL +{gain:,}"
     elif item_id == "dende_blessing":
         state.base_max_hp += 2500
+        detail = "Max HP +2,500"
     elif item_id == "z_sword":
         state.def_pen += 0.20
+        detail = "Defense Penetration +20%"
     elif item_id == "prophetic_fish":
         state.dodge_chance = min(0.45, state.dodge_chance + 0.12)
+        detail = f"Dodge → {round(state.dodge_chance * 100)}%"
     elif item_id == "scouter_v3":
         state.crit_chance = min(0.5, state.crit_chance + 0.15)
+        detail = f"Crit Chance → {round(state.crit_chance * 100)}%"
     elif item_id == "fruit_tree":
         state.outgoing_damage_mult *= 1.15
+        detail = f"Damage Output → x{state.outgoing_damage_mult:.2f}"
     elif item_id == "ki_overdrive":
         state.ki_gain_mult = 2.0
         state.defense_mod *= 1.05
+        detail = "Ki Gain x2 active"
     elif item_id == "tail_regrow":
         state.lifesteal = min(0.5, state.lifesteal + 0.08)
+        detail = f"Lifesteal → {round(state.lifesteal * 100)}%"
     elif item_id == "alloy_plating":
         state.flat_reduction += 150
+        detail = f"Flat Damage Reduction → {state.flat_reduction}"
     elif item_id == "adrenaline":
         state.adrenaline_scale = max(state.adrenaline_scale, 0.5)
+        detail = "Low-HP damage scaling active"
     elif item_id == "yardrat_manual":
         state.dodge_chance = min(0.45, state.dodge_chance + 0.12)
         state.ki_regen = min(20, state.ki_regen + 3)
+        detail = f"Dodge → {round(state.dodge_chance * 100)}%  ·  Ki Regen → +{state.ki_regen}/turn"
     elif item_id == "spirit_water":
         roll = random.choice(["pl", "pl2", "hp", "crit", "dodge", "def_pen"])
         if roll == "pl":
+            gain = int(state.pl * 0.15)
             state.pl = int(state.pl * 1.15)
+            detail = f"LUCKY — Power Level +{gain:,} (15%)"
         elif roll == "pl2":
-            state.pl += int(600 * s)
+            gain = int(600 * s)
+            state.pl += gain
+            detail = f"Power Level +{gain:,}"
         elif roll == "hp":
-            state.base_max_hp += int(1200 * s)
+            gain = int(1200 * s)
+            state.base_max_hp += gain
+            detail = f"Max HP +{gain:,}"
         elif roll == "crit":
             state.crit_chance = min(0.5, state.crit_chance + 0.1)
+            detail = f"Crit Chance → {round(state.crit_chance * 100)}%"
         elif roll == "dodge":
             state.dodge_chance = min(0.45, state.dodge_chance + 0.1)
+            detail = f"Dodge → {round(state.dodge_chance * 100)}%"
         else:
             state.def_pen += 0.12
+            detail = f"Defense Penetration +12%"
 
     state.update_stats()
-    return jsonify({"player": vars(state)})
+    return jsonify({"player": vars(state), "detail": detail})
+
+
+@app.route("/refresh-shop", methods=["POST"])
+def refresh_shop():
+    state = current_state()
+    reroll_cost = 300 + state.wave * 25
+    if state.zeni < reroll_cost:
+        return jsonify({"error": f"Need {reroll_cost:,} Z to reroll the shop"}), 400
+    state.zeni -= reroll_cost
+    state.generate_shop()
+    return jsonify({"shop_items": state.current_shop, "player": vars(state)})
 
 
 @app.route("/next-enemy", methods=["POST"])

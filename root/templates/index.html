@@ -466,6 +466,9 @@
       <button class="btn btn-gold" style="min-width:280px;padding:14px;" onclick="OS.nextWave()">
         INITIATE NEXT ENCOUNTER <span class="key-hint">[Enter]</span>
       </button>
+      <button class="btn" id="btn-reroll" style="padding:14px;" onclick="OS.refreshShop()">
+        REROLL SHOP <span id="reroll-cost-lbl" style="opacity:0.5;font-size:0.55rem;"></span>
+      </button>
       <div class="shop-zeni-display">ZENI: <span id="shop-zeni-val">0</span> Z</div>
     </div>
   </div>
@@ -601,7 +604,7 @@
           "goku_punch_2-removebg-preview.png",
           "goku_strike_2-removebg-preview.png",
         ],
-        heavy:  "goku_meteor_strike-removebg-preview.png",
+        heavy:  "goku_meteor_strike_3-removebg-preview.png",
         skill:  "goku_fire_big_kamehameha-removebg-preview.png",
         ult:    "goku_fire_spirit_bomb-removebg-preview.png",
         guard:  "goku_block_success-removebg-preview.png",
@@ -641,6 +644,54 @@
       },
     };
 
+    // Multi-frame attack sequences played before/during action resolution.
+    // Each frame: { sprite: filename, delay: ms from action start }
+    const ANIM_SEQUENCES = {
+      goku: {
+        heavy: [
+          { sprite: "goku_meteor_strike-removebg-preview.png",   delay: 0   },
+          { sprite: "goku_meteor_strike_2-removebg-preview.png", delay: 180 },
+          { sprite: "goku_meteor_strike_3-removebg-preview.png", delay: 360 },
+        ],
+        beam: [
+          { sprite: "goku_charge_kamehameha-removebg-preview.png",  delay: 0   },
+          { sprite: "goku_fire_big_kamehameha-removebg-preview.png", delay: 420 },
+        ],
+        ult: [
+          { sprite: "goku_spirit_bomb-removebg-preview.png",      delay: 0   },
+          { sprite: "goku_fire_spirit_bomb-removebg-preview.png", delay: 520 },
+        ],
+      },
+      nappa: {
+        heavy: [
+          { sprite: "nappa-combo-1.png", delay: 0   },
+          { sprite: "nappa-combo-2.png", delay: 180 },
+          { sprite: "nappa-combo-3.png", delay: 360 },
+        ],
+        ult: [
+          { sprite: "nappa-mouth-beam-chargeup.png", delay: 0   },
+          { sprite: "nappa-mouth-beam-fire.png",     delay: 480 },
+        ],
+      },
+      vegeta: {
+        heavy: [
+          { sprite: "vegeta-meteor-strike-start.png",  delay: 0   },
+          { sprite: "vegeta-meteor-strike-middle.png", delay: 180 },
+          { sprite: "vegeta-meteor-strike-final.png",  delay: 360 },
+        ],
+        beam: [
+          { sprite: "vegeta-galick-gun-windup1.png",    delay: 0   },
+          { sprite: "vegeta-galick-gun-fire1.png",      delay: 240 },
+          { sprite: "vegeta-galick-gun-fire-final.png", delay: 420 },
+        ],
+        ult: [
+          { sprite: "vegeta-final-explosion-start.png",  delay: 0   },
+          { sprite: "vegeta-final-explosion-middle.png", delay: 280 },
+          { sprite: "vegeta-final-explosion-blast.png",  delay: 520 },
+        ],
+      },
+    };
+
     const ENEMY_ASSETS = {
       "SAIBAMAN":         "saibaman_background_img-removebg-preview.png",
       "FRIEZA SOLDIER":   "friezasoldier.png",
@@ -656,7 +707,7 @@
 
     const SKILL_LAYOUT = {
       goku: {
-        heavy: { id: "slam",           label: "METEOR SLAM",    sprite: "goku_meteor_strike-removebg-preview.png"      },
+        heavy: { id: "slam",           label: "METEOR SLAM",    sprite: "goku_meteor_strike_3-removebg-preview.png"    },
         beam:  { id: "kamehameha",     label: "KAMEHAMEHA",     sprite: "goku_fire_big_kamehameha-removebg-preview.png" },
         ult:   { id: "spirit_bomb",    label: "SPIRIT BOMB",    sprite: "goku_fire_spirit_bomb-removebg-preview.png"    },
       },
@@ -675,6 +726,21 @@
         beam:  { id: "galick_gun",     label: "GALICK GUN",     sprite: "vegeta-galick-gun-fire-final.png" },
         ult:   { id: "final_flash",    label: "FINAL FLASH",    sprite: "vegeta-final-explosion-blast.png" },
       },
+    };
+
+    // Human-readable description for every purchasable buff (used in the status screen)
+    const BUFF_DESCRIPTIONS = {
+      "KI OVERDRIVE":    "All Ki gains are doubled each turn.",
+      "ADRENALINE":      "Outgoing damage scales up as your HP drops.",
+      "FRUIT OF MIGHT":  "All outgoing damage permanently multiplied.",
+      "LIFESTEAL":       "A % of every hit dealt is returned as HP.",
+      "ARMOR":           "Flat damage reduction applied before every hit taken.",
+      "CRIT SCOUTER":    "+15% Crit Chance. Crits deal 1.6× damage.",
+      "YARDRAT MANUAL":  "+Dodge and +Ki Regen permanently.",
+      "Z-SWORD":         "+20% Defense Penetration — bypasses enemy armor.",
+      "KATCHIN ARMOR":   "Reduces all incoming damage by a flat 150.",
+      "ORACLE SNACK":    "+12% Dodge Chance per stack.",
+      "SAIYAN PRIDE":    "Low-HP damage scaling: more pain as you fall.",
     };
 
     const UI = {
@@ -787,12 +853,13 @@
 
       triggerSlotSkill(slot) {
         UI.closeSkills();
-        const L = SKILL_LAYOUT[OS.char] || SKILL_LAYOUT.goku;
-        const s = L[slot] || L.beam;
-        OS.triggerAction(s.id, s.sprite);
+        const L   = SKILL_LAYOUT[OS.char] || SKILL_LAYOUT.goku;
+        const s   = L[slot] || L.beam;
+        const seq = (ANIM_SEQUENCES[OS.char] || {})[slot] || null;
+        OS.triggerAction(s.id, s.sprite, seq);
       },
 
-      async triggerAction(skill, directSprite = null) {
+      async triggerAction(skill, directSprite = null, sequence = null) {
         if (OS.isBusy) return;
         OS.isBusy = true;
         UI.closeSkills();
@@ -807,6 +874,13 @@
           const frames = charData.attack;
           pSprite.src  = `/static/images/${frames[OS.jabIndex % frames.length]}`;
           OS.jabIndex++;
+          pSprite.classList.add("anim-strike");
+          setTimeout(() => pSprite.classList.remove("anim-strike"), 500);
+        } else if (sequence) {
+          // Multi-frame animation — play each frame at its specified delay
+          sequence.forEach(({ sprite, delay }) => {
+            setTimeout(() => { pSprite.src = `/static/images/${sprite}`; }, delay);
+          });
           pSprite.classList.add("anim-strike");
           setTimeout(() => pSprite.classList.remove("anim-strike"), 500);
         } else if (directSprite) {
@@ -898,22 +972,41 @@
           document.getElementById("shop-sub-lbl").innerText =
             `SECTOR ${String(wv).padStart(2,"0")} CLEAR — SELECT UPGRADES BEFORE ADVANCING`;
 
+          const rerollCost = 300 + wv * 25;
+          document.getElementById("reroll-cost-lbl").innerText = `[${rerollCost} Z]`;
+
           const mount = document.getElementById("shop-mount");
           const items = data.shop_items || [];
-          mount.innerHTML = items.map(it => `
-            <div class="shop-card">
-              <div class="shop-item-name">${it.name}</div>
-              <div class="shop-item-desc">${it.desc}</div>
-              <button
-                class="btn btn-gold"
-                style="width:100%;margin-top:auto;"
-                onclick="OS.buyItem('${it.id}', this)"
-              >${it.cost} Z</button>
-            </div>
-          `).join("");
+          OS._renderShopItems(mount, items);
 
           document.getElementById("screen-shop").classList.remove("hidden");
         }, 1200);
+      },
+
+      _renderShopItems(mount, items) {
+        mount.innerHTML = items.map(it => `
+          <div class="shop-card">
+            <div class="shop-item-name">${it.name}</div>
+            <div class="shop-item-desc">${it.desc}</div>
+            <button
+              class="btn btn-gold"
+              style="width:100%;margin-top:auto;"
+              onclick="OS.buyItem('${it.id}', this)"
+            >${it.cost} Z</button>
+          </div>
+        `).join("");
+      },
+
+      async refreshShop() {
+        const res  = await fetch("/refresh-shop", { method: "POST", credentials: "include" });
+        const data = await res.json();
+        if (!res.ok) {
+          UI.log(data.error || "REROLL BLOCKED — INSUFFICIENT ZENI", "red");
+          return;
+        }
+        OS._renderShopItems(document.getElementById("shop-mount"), data.shop_items || []);
+        UI.updateDisplay({ player: data.player, enemy: OS.lastEnemy });
+        UI.log("SHOP REFRESHED — NEW SALVAGE AVAILABLE", "cyan");
       },
 
       async buyItem(id, btn) {
@@ -932,7 +1025,9 @@
           UI.updateDisplay({ player: data.player, enemy: OS.lastEnemy });
           btn.innerText = "INSTALLED";
           btn.disabled  = true;
-          UI.log(`UPGRADE INSTALLED: ${id.toUpperCase().replace(/_/g, " ")}`, "cyan");
+          const label = id.toUpperCase().replace(/_/g, " ");
+          const detail = data.detail ? ` — ${data.detail}` : "";
+          UI.log(`UPGRADE INSTALLED: ${label}${detail}`, "cyan");
         }
       },
 
@@ -982,10 +1077,35 @@
           ["ZENKAI LV",    String(p.zenkai_level || 0)],
         ];
 
-        const mods = [];
-        if ((p.ki_gain_mult || 1) > 1)         mods.push("KI OVERDRIVE");
-        if ((p.adrenaline_scale || 0) > 0)     mods.push("ADRENALINE");
-        if ((p.outgoing_damage_mult || 1) > 1) mods.push("FRUIT OF MIGHT");
+        // Build active buff list with descriptions
+        const activeMods = [];
+        if ((p.ki_gain_mult || 1) > 1)
+          activeMods.push(["KI OVERDRIVE",   "All Ki gains doubled each turn."]);
+        if ((p.adrenaline_scale || 0) > 0)
+          activeMods.push(["SAIYAN PRIDE",   "Damage scales up the lower your HP falls."]);
+        if ((p.outgoing_damage_mult || 1) > 1)
+          activeMods.push(["FRUIT OF MIGHT", `All damage x${(p.outgoing_damage_mult || 1).toFixed(2)}.`]);
+        if ((p.lifesteal || 0) > 0)
+          activeMods.push(["ANCIENT OINTMENT", `${Math.round(p.lifesteal * 100)}% of all damage dealt is healed.`]);
+        if ((p.flat_reduction || 0) > 0)
+          activeMods.push(["KATCHIN ARMOR",  `Every hit taken is reduced by ${p.flat_reduction} flat.`]);
+        if ((p.crit_chance || 0.05) > 0.05)
+          activeMods.push(["SCOUTER MOD",    `${Math.round(p.crit_chance * 100)}% Crit Chance — crits deal 1.6× damage.`]);
+        if ((p.dodge_chance || 0.03) > 0.03)
+          activeMods.push(["EVASION MOD",    `${Math.round(p.dodge_chance * 100)}% chance to fully dodge enemy attacks.`]);
+        if ((p.def_pen || 0) > 0)
+          activeMods.push(["DEF PENETRATION", `${Math.round(p.def_pen * 100)}% of enemy armor bypassed.`]);
+
+        const modsHtml = activeMods.length
+          ? `<div style="margin-top:18px;">
+               <div style="font-family:'Share Tech Mono',monospace;font-size:0.52rem;letter-spacing:4px;color:rgba(252,194,3,0.6);border-bottom:1px solid rgba(252,194,3,0.15);padding-bottom:4px;margin-bottom:8px;">ACTIVE AUGMENTS</div>
+               ${activeMods.map(([name, desc]) => `
+                 <div style="display:flex;gap:12px;border-bottom:1px solid rgba(252,194,3,0.08);padding:5px 0;">
+                   <span style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--gold);min-width:180px;">${name}</span>
+                   <span style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:rgba(255,255,255,0.45);">${desc}</span>
+                 </div>`).join("")}
+             </div>`
+          : `<div class="stat-mods-box" style="opacity:0.4;">NO AUGMENTS ACTIVE</div>`;
 
         document.getElementById("status-content").innerHTML =
           rows.map(([k, v]) =>
@@ -993,10 +1113,7 @@
                <span class="stat-row-lbl">${k}</span>
                <span class="stat-row-val">${v}</span>
              </div>`
-          ).join("") +
-          (mods.length
-            ? `<div class="stat-mods-box">ACTIVE MODS: ${mods.join(" · ")}</div>`
-            : "");
+          ).join("") + modsHtml;
 
         document.getElementById("screen-status").classList.remove("hidden");
       },
