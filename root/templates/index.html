@@ -205,9 +205,26 @@
     .tc-lock{font-size:9px;color:var(--dim);letter-spacing:1px}
     #transform-revert{margin-top:4px}
     #transform-close{font-size:11px}
+    /* ── CURSE BADGES ── */
+    .curse-badge{font-size:11px;border:1px solid;padding:3px 6px;margin-bottom:3px;line-height:1.4}
+    .curse-red   {border-color:var(--red);   color:var(--red)}
+    .curse-blue  {border-color:var(--blue);  color:var(--blue)}
+    .curse-gold  {border-color:var(--gold);  color:var(--gold)}
+    .curse-dim   {border-color:var(--dim);   color:var(--dim)}
+    /* ── ENCOUNTER CARD ── */
+    #encounter-section{background:rgba(255,215,0,.06);border:1px solid var(--gold);
+      padding:12px 16px;max-width:860px;width:100%;display:flex;
+      align-items:center;justify-content:space-between;gap:16px}
+    #enc-title{font-size:13px;color:var(--gold);letter-spacing:2px}
+    #enc-desc{font-size:11px;color:var(--dim);margin-top:3px;line-height:1.5}
+    .enc-btns{display:flex;gap:8px;flex-shrink:0}
+    /* ── BOSS PREVIEW ── */
+    #boss-preview-bar{background:rgba(255,68,68,.08);border:1px solid rgba(255,68,68,.4);
+      padding:6px 12px;font-size:11px;color:var(--red);letter-spacing:2px;
+      display:none;text-align:center;max-width:860px;width:100%}
     /* ── DEFEAT SCREEN ── */
     #screen-defeat{position:absolute;inset:0;background:rgba(0,0,0,.94);z-index:200;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
     #defeat-title{font-size:38px;color:var(--red);letter-spacing:6px;
       text-shadow:0 0 40px var(--red);animation:pulse-red 1s ease infinite alternate}
     @keyframes pulse-red{0%{text-shadow:0 0 20px var(--red)}100%{text-shadow:0 0 60px var(--red)}}
@@ -215,7 +232,11 @@
     #defeat-pl{font-size:12px;color:var(--green);letter-spacing:2px}
     #defeat-sprite{width:200px;height:220px;object-fit:contain;image-rendering:pixelated;
       filter:drop-shadow(0 0 20px rgba(255,68,68,.7))}
-    #defeat-btn{margin-top:8px}
+    #defeat-stats{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+    .defeat-stat{text-align:center;font-size:11px;color:var(--dim);letter-spacing:1px}
+    .defeat-stat .ds-val{font-size:16px;color:var(--gold);display:block;margin-bottom:2px}
+    #defeat-best{font-size:13px;letter-spacing:2px}
+    #defeat-btn{margin-top:6px}
   </style>
 </head>
 <body>
@@ -268,6 +289,10 @@
     <div class="data-line">DODGE: <span id="p-dodge-val" class="data-dim">3%</span></div>
     <div style="font-size:12px;color:var(--dim);letter-spacing:2px;margin-top:4px">AUGMENTS</div>
     <div class="aug-list" id="aug-list"></div>
+    <div id="curse-section" style="display:none">
+      <div style="font-size:12px;color:var(--red);letter-spacing:2px;margin-top:4px">⚠ CURSES</div>
+      <div id="curse-list"></div>
+    </div>
   </div>
 
   <!-- ARENA -->
@@ -330,11 +355,24 @@
 <div id="screen-shop" class="screen hidden">
   <div id="shop-title">◈  POWER UP  ◈</div>
   <div id="shop-wave">WAVE CLEARED — SELECT AN AUGMENT</div>
+  <!-- Encounter offer -->
+  <div id="encounter-section" style="display:none">
+    <div>
+      <div id="enc-title">ENCOUNTER</div>
+      <div id="enc-desc">—</div>
+    </div>
+    <div class="enc-btns">
+      <button class="btn btn-gold" id="enc-accept-btn" onclick="OS.resolveEncounter('accept')">ACCEPT</button>
+      <button class="btn" onclick="OS.resolveEncounter('decline')">DECLINE</button>
+    </div>
+  </div>
+  <!-- Boss preview -->
+  <div id="boss-preview-bar">⚠ BOSS INCOMING: <span id="boss-preview-text">—</span></div>
   <div id="shop-grid"></div>
   <div id="shop-footer">
     <div id="shop-zeni-lbl">⊛ —</div>
     <button class="btn" id="reroll-btn" onclick="OS.refreshShop()">
-      REROLL SHOP <span id="reroll-cost-lbl">[— Z]</span>
+      REROLL <span id="reroll-cost-lbl">[— Z]</span>
     </button>
     <button class="btn btn-gold" onclick="OS.closeShop()">CONTINUE →<span class="key-hint">[ENTER]</span></button>
   </div>
@@ -369,7 +407,15 @@
   <img id="defeat-sprite" src="/static/images/goku_fainted-removebg-preview.png" alt="defeated" />
   <div id="defeat-title">DEFEAT</div>
   <div id="defeat-wave">FELL ON WAVE —</div>
-  <div id="defeat-pl">FINAL POWER LEVEL: —</div>
+  <div id="defeat-best" style="color:var(--gold)"></div>
+  <div id="defeat-stats">
+    <div class="defeat-stat"><span class="ds-val" id="ds-pl">—</span>FINAL PL</div>
+    <div class="defeat-stat"><span class="ds-val" id="ds-kills">—</span>ENEMIES KILLED</div>
+    <div class="defeat-stat"><span class="ds-val" id="ds-dmg">—</span>DAMAGE DEALT</div>
+    <div class="defeat-stat"><span class="ds-val" id="ds-taken">—</span>DAMAGE TAKEN</div>
+    <div class="defeat-stat"><span class="ds-val" id="ds-items">—</span>ITEMS BOUGHT</div>
+    <div class="defeat-stat"><span class="ds-val" id="ds-runs">—</span>TOTAL RUNS</div>
+  </div>
   <button class="btn btn-gold" id="defeat-btn" onclick="OS.returnToRoster()">
     ↩ RETURN TO ROSTER <span class="key-hint">[ENTER]</span>
   </button>
@@ -694,6 +740,20 @@ const UI = {
       const eSrc = ENEMY_ASSETS[e.name] || ENEMY_ASSETS["fallback"];
       document.getElementById("e-sprite").src = `/static/images/${eSrc}`;
     }
+
+    // Curses
+    const curseSection = document.getElementById("curse-section");
+    const curseList    = document.getElementById("curse-list");
+    const curses = p.curse_list || [];
+    if (curses.length > 0) {
+      curseSection.style.display = "";
+      curseList.innerHTML = curses.map(c =>
+        `<div class="curse-badge curse-${c.color || 'red'}">${c.label} (${c.waves}w)</div>`
+      ).join("");
+    } else {
+      curseSection.style.display = "none";
+      curseList.innerHTML = "";
+    }
   },
 };
 
@@ -730,7 +790,7 @@ const OS = {
     const data = await res.json();
 
     document.getElementById("zenkai-badge").textContent =
-      `ZENKAI LEVEL: ${data.zenkai}`;
+      `ZENKAI ${data.zenkai} · BEST WAVE ${data.best_wave || "—"} · RUNS ${data.total_runs || 0}`;
 
     // Organise by saga → category
     const sections = {};
@@ -947,7 +1007,12 @@ const OS = {
 
     OS.lastEnemy = data.enemy;
 
-    // ── Transform drain message (show immediately) ───────────────────
+    // ── Curse tick messages ──────────────────────────────────────────
+    for (const msg of (data.curse_tick || [])) {
+      UI.log(msg, msg.includes("EXPIRED") ? "dim" : "red");
+    }
+
+    // ── Transform drain message ──────────────────────────────────────
     if (data.transform_msg) {
       const color = data.transform_msg.includes("DROPPED") ? "red" :
                     data.transform_msg.includes("burned") ? "blue" : "gold";
@@ -1002,6 +1067,9 @@ const OS = {
     if (data.enemy_msg) {
       await new Promise(r => setTimeout(r, 500));
       UI.log(data.enemy_msg, "red");
+      if (data.curse_applied) {
+        UI.log(`CURSED: ${data.curse_applied}!`, "red");
+      }
 
       if (data.game_over) {
         // Show dying animation then defeat screen
@@ -1056,13 +1124,27 @@ const OS = {
     UI.setText("shop-wave", `WAVE ${data.player.wave} CLEARED`);
 
     const rerollCost = 300 + data.player.wave * 25;
-    document.getElementById("reroll-cost-lbl").textContent =
-      `[${UI.fmt(rerollCost)} Z]`;
+    document.getElementById("reroll-cost-lbl").textContent = `[${UI.fmt(rerollCost)} Z]`;
     UI.setText("shop-zeni-lbl", `⊛ ${UI.fmt(data.player.zeni)}`);
 
+    // Encounter offer
+    OS._renderEncounter(data.encounter);
+
+    // Boss preview
+    OS._renderBossPreview(data.boss_preview);
+
+    // Shop grid
+    OS._renderShopGrid(data.shop_items);
+
+    UI.show("screen-shop");
+    OS.isBusy = false;
+    OS.setBusy(false);
+  },
+
+  _renderShopGrid(items) {
     const grid = document.getElementById("shop-grid");
     grid.innerHTML = "";
-    for (const item of data.shop_items) {
+    for (const item of (items || [])) {
       const card = document.createElement("div");
       card.className = "shop-card";
       card.innerHTML = `
@@ -1073,9 +1155,38 @@ const OS = {
       card.addEventListener("click", () => OS.buyItem(item.id));
       grid.appendChild(card);
     }
-    UI.show("screen-shop");
-    OS.isBusy = false;
-    OS.setBusy(false);
+  },
+
+  _renderEncounter(enc) {
+    const sec = document.getElementById("encounter-section");
+    if (!enc) { sec.style.display = "none"; return; }
+    sec.style.display = "flex";
+    UI.setText("enc-title", enc.title);
+    UI.setText("enc-desc",  enc.desc);
+    document.getElementById("enc-accept-btn").textContent = enc.btn || "ACCEPT";
+    OS._activeEncounter = enc;
+  },
+
+  _renderBossPreview(preview) {
+    const bar = document.getElementById("boss-preview-bar");
+    if (!preview) { bar.style.display = "none"; return; }
+    bar.style.display = "";
+    UI.setText("boss-preview-text",
+      `${preview.name} · PL ${UI.fmt(preview.pl)} · WAVE ${preview.wave} (${preview.waves_away} wave${preview.waves_away > 1 ? "s" : ""} away)`);
+  },
+
+  async resolveEncounter(choice) {
+    document.getElementById("encounter-section").style.display = "none";
+    const res = await fetch("/resolve-encounter", {
+      method: "POST", credentials: "include",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({choice}),
+    });
+    const data = await res.json();
+    if (!res.ok) { UI.log(data.error || "ENCOUNTER FAILED", "red"); return; }
+    OS.lastPlayer = data.player;
+    UI.updateDisplay({player: data.player, enemy: OS.lastEnemy});
+    UI.log(data.message || "ENCOUNTER RESOLVED", choice === "accept" ? "gold" : "dim");
   },
 
   async buyItem(itemId) {
@@ -1104,21 +1215,10 @@ const OS = {
     OS.lastPlayer = data.player;
     UI.setText("shop-zeni-lbl", `⊛ ${UI.fmt(data.player.zeni)}`);
     const rerollCost = 300 + data.player.wave * 25;
-    document.getElementById("reroll-cost-lbl").textContent =
-      `[${UI.fmt(rerollCost)} Z]`;
-    const grid = document.getElementById("shop-grid");
-    grid.innerHTML = "";
-    for (const item of data.shop_items) {
-      const card = document.createElement("div");
-      card.className = "shop-card";
-      card.innerHTML = `
-        <div class="shop-name">${item.name}</div>
-        <div class="shop-desc">${item.desc}</div>
-        <div class="shop-cost">⊛ ${UI.fmt(item.cost)}</div>
-      `;
-      card.addEventListener("click", () => OS.buyItem(item.id));
-      grid.appendChild(card);
-    }
+    document.getElementById("reroll-cost-lbl").textContent = `[${UI.fmt(rerollCost)} Z]`;
+    OS._renderShopGrid(data.shop_items);
+    OS._renderEncounter(data.encounter);
+    OS._renderBossPreview(data.boss_preview);
     UI.log("SHOP REROLLED", "dim");
   },
 
@@ -1220,12 +1320,34 @@ const OS = {
   closeStatus() { UI.hide("screen-status"); },
 
   // ── Defeat ────────────────────────────────────────────────────────────
-  showDefeat(p) {
+  async showDefeat(p) {
     UI.setText("defeat-wave", `FELL ON WAVE ${p.wave}`);
-    UI.setText("defeat-pl",   `FINAL POWER LEVEL: ${UI.fmt(p.pl)}`);
     const fainted = (ASSETS[OS.char] || ASSETS["goku"]).fainted ||
                     "goku_fainted-removebg-preview.png";
     document.getElementById("defeat-sprite").src = `/static/images/${fainted}`;
+
+    // Record run + fetch summary
+    try {
+      const res  = await fetch("/end-run", {method:"POST", credentials:"include",
+                                            headers:{"Content-Type":"application/json"}});
+      const data = await res.json();
+      UI.setText("ds-pl",     UI.fmt(p.pl));
+      UI.setText("ds-kills",  UI.fmt(data.run_stats?.kills || 0));
+      UI.setText("ds-dmg",    UI.fmt(data.run_stats?.dmg_dealt || 0));
+      UI.setText("ds-taken",  UI.fmt(data.run_stats?.dmg_taken || 0));
+      UI.setText("ds-items",  data.run_stats?.items || 0);
+      UI.setText("ds-runs",   data.total_runs || "—");
+      const bestEl = document.getElementById("defeat-best");
+      if (data.is_new_best) {
+        bestEl.textContent = `★ NEW PERSONAL BEST: WAVE ${data.new_best} ★`;
+        bestEl.style.color = "var(--gold)";
+      } else {
+        bestEl.textContent = `PERSONAL BEST: WAVE ${data.new_best}`;
+        bestEl.style.color = "var(--dim)";
+      }
+    } catch (_) {
+      UI.setText("ds-pl", UI.fmt(p.pl));
+    }
     UI.show("screen-defeat");
   },
 
