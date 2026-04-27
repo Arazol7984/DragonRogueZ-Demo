@@ -381,44 +381,39 @@
 // ═══════════════════════════════════════════════════════════════════════════
 const ASSETS = {
   goku: {
-    idle:   "goku_standing-removebg-preview.png",
-    attack: ["goku_punching-removebg-preview.png"],
-    hurt:   "goku_hurt-removebg-preview.png",
-    fainted:"goku_fainted-removebg-preview.png",
-    specials: {
-      slam:        ["goku_meteor_strike-removebg-preview.png"],
-      kamehameha:  ["goku_charge_kamehameha-removebg-preview.png"],
-      spirit_bomb: ["goku_spirit_bomb-removebg-preview.png"],
-    },
+    idle:     "goku_standing-removebg-preview.png",
+    attack:   ["goku_punch_1-removebg-preview.png","goku_punch_2-removebg-preview.png"],
+    hurt:     "goku_take_damage-removebg-preview.png",
+    hurt_seq: ["goku_take_damage-removebg-preview.png","goku_take_damage_2-removebg-preview.png","goku_take_damage_3-removebg-preview.png"],
+    fainted:  "goku_fainted-removebg-preview.png",
   },
   goku_namek: {
-    idle:   "goku_standing-removebg-preview.png",
-    attack: ["goku_punching-removebg-preview.png"],
-    hurt:   "goku_hurt-removebg-preview.png",
-    fainted:"goku_fainted-removebg-preview.png",
-    specials: {
-      slam:        ["goku_meteor_strike-removebg-preview.png"],
-      kamehameha:  ["goku_charge_kamehameha-removebg-preview.png"],
-      spirit_bomb: ["goku_spirit_bomb-removebg-preview.png"],
-    },
+    idle:     "goku_standing-removebg-preview.png",
+    attack:   ["goku_punch_1-removebg-preview.png","goku_punch_2-removebg-preview.png"],
+    hurt:     "goku_take_damage-removebg-preview.png",
+    hurt_seq: ["goku_take_damage-removebg-preview.png","goku_take_damage_2-removebg-preview.png","goku_take_damage_3-removebg-preview.png"],
+    fainted:  "goku_fainted-removebg-preview.png",
   },
   raditz: {
-    idle:   "raditz-standing.png",
-    attack: ["raditz-standing.png"],
-    hurt:   "raditz-standing.png",
-    fainted:"raditz-standing.png",
+    idle:     "raditz-standing.png",
+    attack:   ["raditz-punch-1.png","raditz-punch-2.png"],
+    hurt:     "raditz-damage-taken-1.png",
+    hurt_seq: ["raditz-damage-taken-1.png","raditz-damage-taken-2.png","raditz-damage-taken-3.png"],
+    fainted:  "raditz-defeated.png",
   },
   nappa: {
-    idle:   "nappa-standing.png",
-    attack: ["nappa-standing.png"],
-    hurt:   "nappa-standing.png",
-    fainted:"nappa-standing.png",
+    idle:     "nappa-standing.png",
+    attack:   ["nappa-punch-start.png","nappa-punch-2.png"],
+    hurt:     "nappa-damage.png",
+    hurt_seq: ["nappa-damage.png"],
+    fainted:  "nappa-defeated.png",
   },
   vegeta: {
-    idle:   "vegeta-standing-removebg-preview.png",
-    attack: ["vegeta-standing-removebg-preview.png"],
-    hurt:   "vegeta-standing-removebg-preview.png",
-    fainted:"vegeta-standing-removebg-preview.png",
+    idle:     "vegeta-standing-removebg-preview.png",
+    attack:   ["vegeta-punch-start.png","vegeta-punch-final.png"],
+    hurt:     "vegeta-damage-start.png",
+    hurt_seq: ["vegeta-damage-start.png","vegeta-damage-middle1.png","vegeta-damage-middle2.png","vegeta-damage-middle3.png"],
+    fainted:  "vegeta-death-start.png",
   },
 };
 
@@ -448,83 +443,130 @@ const ENEMY_ASSETS = {
 const ANIM_SEQUENCES = {
   goku: {
     jab: [
-      {sprite:"goku_punching-removebg-preview.png", delay:200},
-      {sprite:"goku_standing-removebg-preview.png", delay:120},
-      {sprite:"goku_punching-removebg-preview.png", delay:200},
-      {sprite:"goku_standing-removebg-preview.png", delay:120},
+      {sprite:"goku_punch_1-removebg-preview.png",  delay:160},
+      {sprite:"goku_punch_2-removebg-preview.png",  delay:200},
+      {sprite:"goku_punch_4-removebg-preview.png",  delay:160},
+      {sprite:"goku_standing-removebg-preview.png", delay:100},
     ],
     slam: [
-      {sprite:"goku_meteor_strike-removebg-preview.png",   delay:280},
-      {sprite:"goku_meteor_strike_2-removebg-preview.png", delay:280},
-      {sprite:"goku_meteor_strike_3-removebg-preview.png", delay:280},
-      {sprite:"goku_standing-removebg-preview.png",        delay:200},
+      {sprite:"goku_dash-removebg-preview.png",             delay:140},
+      {sprite:"goku_meteor_strike-removebg-preview.png",    delay:240},
+      {sprite:"goku_meteor_strike_2-removebg-preview.png",  delay:240},
+      {sprite:"goku_meteor_strike_3-removebg-preview.png",  delay:240},
+      {sprite:"goku_standing-removebg-preview.png",         delay:160},
     ],
     kamehameha: [
-      {sprite:"goku_charge_kamehameha-removebg-preview.png",   delay:400},
-      {sprite:"goku_fire_big_kamehameha-removebg-preview.png", delay:500, scale:1.7},
-      {sprite:"goku_standing-removebg-preview.png",            delay:200},
+      {sprite:"goku_charge_kamehameha-removebg-preview.png",   delay:420},
+      {sprite:"goku_fire_big_kamehameha-removebg-preview.png", delay:520, scale:1.7},
+      {sprite:"goku_standing-removebg-preview.png",            delay:160},
     ],
     spirit_bomb: [
+      {sprite:"goku_power_up-removebg-preview.png",         delay:300},
       {sprite:"goku_spirit_bomb-removebg-preview.png",      delay:500},
       {sprite:"goku_fire_spirit_bomb-removebg-preview.png", delay:600, scale:1.25},
-      {sprite:"goku_standing-removebg-preview.png",         delay:200},
+      {sprite:"goku_standing-removebg-preview.png",         delay:160},
     ],
     double_sunday: [
-      {sprite:"goku_punching-removebg-preview.png", delay:300},
-      {sprite:"goku_standing-removebg-preview.png", delay:200},
+      {sprite:"goku_punch_1-removebg-preview.png",  delay:160},
+      {sprite:"goku_punch_2-removebg-preview.png",  delay:200},
+      {sprite:"goku_standing-removebg-preview.png", delay:120},
     ],
     bomber_dx: [
-      {sprite:"goku_punching-removebg-preview.png", delay:300},
-      {sprite:"goku_standing-removebg-preview.png", delay:200},
+      {sprite:"goku_basic_ki_blast-removebg-preview.png",      delay:300},
+      {sprite:"goku_fire_small_kamehameha-removebg-preview.png",delay:400},
+      {sprite:"goku_standing-removebg-preview.png",            delay:160},
     ],
     galick_gun: [
-      {sprite:"goku_charge_kamehameha-removebg-preview.png", delay:400},
+      {sprite:"goku_charge_kamehameha-removebg-preview.png",   delay:420},
       {sprite:"goku_fire_big_kamehameha-removebg-preview.png", delay:500, scale:1.5},
-      {sprite:"goku_standing-removebg-preview.png", delay:200},
+      {sprite:"goku_standing-removebg-preview.png",            delay:160},
     ],
     final_flash: [
-      {sprite:"goku_charge_kamehameha-removebg-preview.png", delay:400},
-      {sprite:"goku_fire_big_kamehameha-removebg-preview.png", delay:500, scale:1.7},
-      {sprite:"goku_standing-removebg-preview.png", delay:200},
+      {sprite:"goku_power_up-removebg-preview.png",            delay:260},
+      {sprite:"goku_charge_kamehameha-removebg-preview.png",   delay:420},
+      {sprite:"goku_fire_big_kamehameha-removebg-preview.png", delay:560, scale:1.7},
+      {sprite:"goku_standing-removebg-preview.png",            delay:160},
+    ],
+  },
+  raditz: {
+    jab: [
+      {sprite:"raditz-punch-1.png",   delay:160},
+      {sprite:"raditz-punch-2.png",   delay:220},
+      {sprite:"raditz-standing.png",  delay:120},
+    ],
+    slam: [
+      {sprite:"raditz-dash.png",       delay:140},
+      {sprite:"raditz-flurry.png",     delay:220},
+      {sprite:"raditz-flurry-2.png",   delay:220},
+      {sprite:"raditz-kick.png",       delay:200},
+      {sprite:"raditz-standing.png",   delay:140},
+    ],
+    double_sunday: [
+      {sprite:"raditz-ki-blast-charge.png",    delay:320},
+      {sprite:"raditz-split-shot-charge.png",  delay:260},
+      {sprite:"raditz-split-shot-fire.png",    delay:440, scale:1.3},
+      {sprite:"raditz-standing.png",           delay:160},
     ],
   },
   nappa: {
     jab: [
-      {sprite:"nappa-standing.png", delay:300},
+      {sprite:"nappa-punch-start.png", delay:160},
+      {sprite:"nappa-punch-2.png",     delay:240},
+      {sprite:"nappa-standing.png",    delay:120},
     ],
     slam: [
-      {sprite:"nappa_heavy_1-removebg-preview.png", delay:300},
-      {sprite:"nappa_heavy_2-removebg-preview.png", delay:300},
-      {sprite:"nappa-standing.png", delay:200},
+      {sprite:"nappa-combo-1.png",  delay:160},
+      {sprite:"nappa-combo-2.png",  delay:160},
+      {sprite:"nappa-combo-3.png",  delay:160},
+      {sprite:"nappa-combo-4.png",  delay:160},
+      {sprite:"nappa-combo-5.png",  delay:160},
+      {sprite:"nappa-standing.png", delay:140},
     ],
     saturday_crash: [
-      {sprite:"nappa_heavy_1-removebg-preview.png", delay:350},
-      {sprite:"nappa_beam-removebg-preview.png",    delay:500, scale:1.3},
-      {sprite:"nappa-standing.png", delay:200},
+      {sprite:"nappa-ki-blast-windup.png", delay:320},
+      {sprite:"nappa-ki-blast-fire.png",   delay:420},
+      {sprite:"nappa-dx-bomber-final.png", delay:500, scale:1.2},
+      {sprite:"nappa-standing.png",        delay:160},
     ],
     mouth_beam: [
-      {sprite:"nappa_beam-removebg-preview.png", delay:600, scale:1.4},
-      {sprite:"nappa-standing.png", delay:200},
+      {sprite:"nappa-mouth-beam-chargeup.png", delay:380},
+      {sprite:"nappa-mouth-beam-fire.png",     delay:560, scale:1.35},
+      {sprite:"nappa-standing.png",            delay:160},
     ],
   },
   vegeta: {
     jab: [
-      {sprite:"vegeta-standing-removebg-preview.png", delay:300},
+      {sprite:"vegeta-punch-start.png",              delay:160},
+      {sprite:"vegeta-punch-final.png",              delay:220},
+      {sprite:"vegeta-standing-removebg-preview.png",delay:120},
     ],
     slam: [
-      {sprite:"vegeta_heavy_1-removebg-preview.png", delay:300},
-      {sprite:"vegeta_heavy_2-removebg-preview.png", delay:300},
-      {sprite:"vegeta-standing-removebg-preview.png", delay:200},
+      {sprite:"vegeta-dash.png",                     delay:140},
+      {sprite:"vegeta-meteor-strike-start.png",      delay:200},
+      {sprite:"vegeta-meteor-strike-middle.png",     delay:200},
+      {sprite:"vegeta-meteor-strike-final.png",      delay:200},
+      {sprite:"vegeta-standing-removebg-preview.png",delay:140},
     ],
     galick_gun: [
-      {sprite:"vegeta_galick_charge-removebg-preview.png", delay:400},
-      {sprite:"vegeta_galick_fire-removebg-preview.png",   delay:500, scale:1.5},
-      {sprite:"vegeta-standing-removebg-preview.png", delay:200},
+      {sprite:"vegeta-galick-gun-start.png",         delay:180},
+      {sprite:"vegeta-galick-gun-windup1.png",       delay:150},
+      {sprite:"vegeta-galick-gun-windup2.png",       delay:150},
+      {sprite:"vegeta-galick-gun-windup3.png",       delay:150},
+      {sprite:"vegeta-galick-gun-windup4.png",       delay:150},
+      {sprite:"vegeta-galick-gun-fire1.png",         delay:300, scale:1.4},
+      {sprite:"vegeta-galick-gun-fire-final.png",    delay:440, scale:1.6},
+      {sprite:"vegeta-standing-removebg-preview.png",delay:160},
     ],
     final_flash: [
-      {sprite:"vegeta_galick_charge-removebg-preview.png", delay:450},
-      {sprite:"vegeta_galick_fire-removebg-preview.png",   delay:600, scale:1.8},
-      {sprite:"vegeta-standing-removebg-preview.png", delay:200},
+      {sprite:"vegeta-combat-stance-start.png",      delay:200},
+      {sprite:"vegeta-galick-gun-windup1.png",       delay:160},
+      {sprite:"vegeta-galick-gun-windup2.png",       delay:160},
+      {sprite:"vegeta-galick-gun-windup3.png",       delay:160},
+      {sprite:"vegeta-galick-gun-windup4.png",       delay:180},
+      {sprite:"vegeta-galick-gun-fire1.png",         delay:340, scale:1.5},
+      {sprite:"vegeta-final-explosion-start.png",    delay:300, scale:1.6},
+      {sprite:"vegeta-final-explosion-blast.png",    delay:500, scale:1.9},
+      {sprite:"vegeta-standing-removebg-preview.png",delay:160},
     ],
   },
 };
@@ -971,13 +1013,18 @@ const OS = {
         return;
       }
 
-      // Show hurt animation
-      pSprite.src = `/static/images/${charData.hurt || charData.idle}`;
+      // Multi-frame hurt animation
+      const hurtSeq = charData.hurt_seq || [charData.hurt || charData.idle];
       pSprite.classList.add("anim-p-hurt");
+      for (let i = 0; i < hurtSeq.length; i++) {
+        setTimeout(() => {
+          pSprite.src = `/static/images/${hurtSeq[i]}`;
+        }, i * 160);
+      }
       setTimeout(() => {
         pSprite.classList.remove("anim-p-hurt");
         pSprite.src = `/static/images/${charData.idle}`;
-      }, 550);
+      }, hurtSeq.length * 160 + 80);
     }
 
     OS.isBusy = false;
