@@ -945,14 +945,9 @@ const UI = {
     const dbSection = document.getElementById("db-section");
     const dbCount   = p.dragon_balls || 0;
     dbSection.style.display = "";
-    {
-      const orbs = document.getElementById("db-orbs");
-      orbs.innerHTML = Array.from({length:7}, (_, i) =>
-        `<div class="db-orb${i < dbCount ? " collected" : ""}">${i < dbCount ? "★" : ""}</div>`
-      ).join("");
-    } else {
-      dbSection.style.display = "none";
-    }
+    document.getElementById("db-orbs").innerHTML = Array.from({length:7}, (_, i) =>
+      `<div class="db-orb${i < dbCount ? " collected" : ""}">${i < dbCount ? "★" : ""}</div>`
+    ).join("");
 
     // Transform status panel
     const tsPanel = document.getElementById("transform-status-panel");
