@@ -29,13 +29,19 @@ def init_db():
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS player_saves (
-            ip           TEXT PRIMARY KEY,
+            ip             TEXT PRIMARY KEY,
             unlocked_chars TEXT NOT NULL DEFAULT '["goku","goku_namek"]',
             zenkai_level   INTEGER NOT NULL DEFAULT 0,
             best_wave      INTEGER NOT NULL DEFAULT 0,
-            total_runs     INTEGER NOT NULL DEFAULT 0
+            total_runs     INTEGER NOT NULL DEFAULT 0,
+            active_run     TEXT    DEFAULT NULL
         )
     """)
+    # Migrate: add active_run column if upgrading from older schema
+    try:
+        c.execute("ALTER TABLE player_saves ADD COLUMN active_run TEXT DEFAULT NULL")
+    except sqlite3.OperationalError:
+        pass  # column already exists
     # One-time migration of old single-row table if it exists
     try:
         c.execute("SELECT unlocked_chars, zenkai_level FROM progress WHERE id=1")
@@ -96,6 +102,64 @@ def save_run_end(ip, zenkai, wave):
     _upsert_player(ip, chars, zenkai, wave, runs_delta=1)
     new_best = max(old_best, wave)
     return old_best, new_best, old_runs + 1
+
+
+# Fields that fully describe a live run and must survive a server restart.
+_PERSIST_FIELDS = [
+    "char", "wave", "hp", "max_hp", "base_max_hp", "ki", "pl", "zeni",
+    "ki_regen", "ki_gain_mult", "crit_chance", "dodge_chance", "lifesteal",
+    "flat_reduction", "adrenaline_scale", "outgoing_damage_mult", "def_pen",
+    "curse_immune", "hp_on_kill", "hp_regen", "pl_kill_mult",
+    "kaioken_unlocked", "ssj_unlocked", "active_transform",
+    "transform_mult", "transform_hp_drain", "transform_ki_drain",
+    "curse_list", "dragon_balls", "saiyan_rage_turns", "rage_used",
+    "pl_milestones_hit", "kill_streak", "run_stats",
+    "enemy", "is_guarding",
+]
+
+
+def save_game_state(state):
+    """Persist the full live run to the database so it survives server restarts."""
+    try:
+        snapshot = {f: getattr(state, f, None) for f in _PERSIST_FIELDS}
+        conn = sqlite3.connect("save_data.db")
+        conn.execute("""
+            INSERT INTO player_saves (ip, active_run)
+            VALUES (?, ?)
+            ON CONFLICT(ip) DO UPDATE SET active_run = excluded.active_run
+        """, (state.ip, json.dumps(snapshot)))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass  # never crash mid-combat over a save failure
+
+
+def load_game_state(ip):
+    """Restore a live run from the database. Returns None if no saved run."""
+    try:
+        conn = sqlite3.connect("save_data.db")
+        row = conn.execute(
+            "SELECT active_run FROM player_saves WHERE ip=?", (ip,)
+        ).fetchone()
+        conn.close()
+        if row and row[0]:
+            return json.loads(row[0])
+    except Exception:
+        pass
+    return None
+
+
+def clear_game_state(ip):
+    """Erase the persisted run (called on end-run or new character select)."""
+    try:
+        conn = sqlite3.connect("save_data.db")
+        conn.execute(
+            "UPDATE player_saves SET active_run = NULL WHERE ip=?", (ip,)
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -553,7 +617,21 @@ class GameState:
 def current_state():
     ip = get_client_ip()
     if ip not in _states:
-        _states[ip] = GameState(ip)
+        # Try to restore a run that survived a server restart
+        snapshot = load_game_state(ip)
+        state = GameState(ip)
+        if snapshot:
+            for field, value in snapshot.items():
+                if hasattr(state, field):
+                    setattr(state, field, value)
+            # Recalculate derived transform stats in case they weren't snapshotted cleanly
+            if state.active_transform:
+                t = CHAR_TRANSFORMS.get(state.char, {}).get(state.active_transform)
+                if t:
+                    state.transform_mult     = t["mult"]
+                    state.transform_hp_drain = t["hp_drain"]
+                    state.transform_ki_drain = t["ki_drain"]
+        _states[ip] = state
     return _states[ip]
 
 
@@ -663,6 +741,8 @@ def select_char():
         return jsonify({"error": "Character not unlocked"}), 403
     state = current_state()
     state.reset(char)
+    clear_game_state(ip)      # wipe any old saved run for this IP
+    save_game_state(state)    # save the fresh run immediately
     transforms = list(CHAR_TRANSFORMS.get(char, {}).keys())
     return jsonify({"player": vars(state), "enemy": state.enemy, "transforms": transforms})
 
@@ -895,6 +975,7 @@ def battle_action():
     else:
         enemy_msg, game_over, curse_applied, special_move = _enemy_attack(state)
 
+    save_game_state(state)
     return jsonify({
         "message":          player_msg,
         "enemy_msg":        enemy_msg,
@@ -934,6 +1015,7 @@ def transform():
     mode = request.get_json().get("mode", "none")
     if mode == "none":
         state.drop_transform()
+        save_game_state(state)
         return jsonify({"player": vars(state), "message": "TRANSFORMATION RELEASED"})
     char_table = CHAR_TRANSFORMS.get(state.char, {})
     t = char_table.get(mode)
@@ -951,6 +1033,7 @@ def transform():
     state.transform_def_mult = t["def_pen"]
     drain_str = (f"{int(t['hp_drain']*100)}% HP/turn" if t["hp_drain"] > 0
                  else f"{int(t['ki_drain'])} Ki/turn")
+    save_game_state(state)
     return jsonify({"player": vars(state), "message": f"{t['label']} ACTIVATED · Drain: {drain_str}"})
 
 
@@ -1127,6 +1210,7 @@ def purchase():
             detail = "SHENRON GRANTS INFINITE ZENI — +5,000 Zeni + Crit Chance +8%!"
 
     state.update_stats()
+    save_game_state(state)
     return jsonify({"player": vars(state), "detail": detail})
 
 
@@ -1138,6 +1222,7 @@ def refresh_shop():
         return jsonify({"error": f"Need {reroll_cost:,} Z to reroll"}), 400
     state.zeni -= reroll_cost
     state.generate_shop()
+    save_game_state(state)
     return jsonify({
         "shop_items":  state.current_shop,
         "encounter":   state.pending_encounter,
@@ -1226,13 +1311,17 @@ def resolve_encounter():
         msg = f"BUBBLES TRAINING — Dodge → {round(state.dodge_chance*100)}% · Cost: 300 Z"
 
     state.update_stats()
+    save_game_state(state)
     return jsonify({"player": vars(state), "message": msg})
 
 
 @app.route("/end-run", methods=["POST"])
 def end_run():
+    ip = get_client_ip()
     state = current_state()
     old_best, new_best, total = save_run_end(state.ip, state.zenkai_level, state.wave)
+    clear_game_state(ip)   # wipe the persisted run — it's over
+    del _states[ip]        # force a fresh GameState on next select-char
     return jsonify({
         "run_stats":    state.run_stats,
         "wave_reached": state.wave,
@@ -1257,6 +1346,7 @@ def next_enemy():
     transforms = list(CHAR_TRANSFORMS.get(state.char, {}).keys())
     saga_changed = old_saga != new_saga
     boss_quote = state.enemy.get("quote") if state.enemy.get("boss") else None
+    save_game_state(state)
     return jsonify({
         "enemy":        state.enemy,
         "player":       vars(state),
@@ -1340,6 +1430,7 @@ def swap_fighter():
     state.ki    = 100
     state.enemy = state.spawn_enemy()
 
+    save_game_state(state)
     transforms = list(CHAR_TRANSFORMS.get(new_char, {}).keys())
     passive_desc = CHAR_ROSTER[new_char].get("passive", "")
     return jsonify({
