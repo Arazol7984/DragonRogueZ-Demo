@@ -245,41 +245,45 @@ SAGAS = [
 
 ENEMY_POOLS = {
     "SAIYAN": {
+        # base_pl / pl_scale stay the same; exponent is now saga-relative (0 at wave 1)
         "minions": [
-            {"name": "SAIBAMAN",       "base_hp": 280, "hp_scale": 70,  "base_pl": 900,  "pl_scale": 1.08},
-            {"name": "FRIEZA SOLDIER", "base_hp": 300, "hp_scale": 75,  "base_pl": 800,  "pl_scale": 1.06},
+            {"name": "SAIBAMAN",       "base_hp": 350,  "hp_scale": 80,  "base_pl": 900,   "pl_scale": 1.08},
+            {"name": "FRIEZA SOLDIER", "base_hp": 380,  "hp_scale": 85,  "base_pl": 800,   "pl_scale": 1.07},
         ],
         "bosses": {
-            10: {"name": "RADITZ", "hp": 1800,  "pl": 1200,  "unlock": "raditz", "grants": None,     "quote": "RADITZ: So the weakling Kakarot dares to resist! Your power level is pathetic — prepare to die, little brother!"},
-            20: {"name": "NAPPA",  "hp": 5500,  "pl": 3800,  "unlock": "nappa",  "grants": "kaioken","quote": "NAPPA: Hehehe! Vegeta, can I crush this one? He barely registers on my scouter!"},
-            30: {"name": "VEGETA", "hp": 22000, "pl": 16000, "unlock": "vegeta", "grants": None,     "quote": "VEGETA: What?! Impossible — a power level like THAT?! I AM THE PRINCE OF ALL SAIYANS! I WILL NOT BE DEFEATED!!!"},
+            # HP tuned for players who have 3× more HP than before (pl*0.18)
+            10: {"name": "RADITZ", "hp": 3200,   "pl": 1500,   "unlock": "raditz", "grants": None,      "quote": "RADITZ: So the weakling Kakarot dares to resist! Your power level is pathetic — prepare to die, little brother!"},
+            20: {"name": "NAPPA",  "hp": 12000,  "pl": 5000,   "unlock": "nappa",  "grants": "kaioken", "quote": "NAPPA: Hehehe! Vegeta, can I crush this one? He barely registers on my scouter!"},
+            30: {"name": "VEGETA", "hp": 45000,  "pl": 18000,  "unlock": "vegeta", "grants": None,      "quote": "VEGETA: What?! Impossible — a power level like THAT?! I AM THE PRINCE OF ALL SAIYANS! I WILL NOT BE DEFEATED!!!"},
         },
     },
     "NAMEK": {
+        # saga-relative exponent: at wave 31 exp=0, at wave 70 exp=39
         "minions": [
-            {"name": "NAMEKIAN WARRIOR", "base_hp": 600, "hp_scale": 200, "base_pl": 5000, "pl_scale": 1.06},
-            {"name": "FRIEZA SOLDIER",   "base_hp": 550, "hp_scale": 180, "base_pl": 4500, "pl_scale": 1.05},
+            {"name": "NAMEKIAN WARRIOR", "base_hp": 1800,  "hp_scale": 400, "base_pl": 6000,  "pl_scale": 1.065},
+            {"name": "FRIEZA SOLDIER",   "base_hp": 1600,  "hp_scale": 360, "base_pl": 5500,  "pl_scale": 1.060},
         ],
         "bosses": {
-            35: {"name": "DODORIA",      "hp": 25000,  "pl": 22000,  "unlock": "dodoria",  "grants": None, "quote": "DODORIA: Lord Frieza's intel was right — you ARE strong. But strong enough? I doubt it!"},
-            40: {"name": "ZARBON",       "hp": 35000,  "pl": 23000,  "unlock": "zarbon",   "grants": None, "quote": "ZARBON: I'd hate to ruin my beautiful face in a fight with you. Surrender — I may spare you."},
-            50: {"name": "GULDO",        "hp": 30000,  "pl": 11000,  "unlock": "guldo",    "grants": None, "quote": "GULDO: Ha! My TIME FREEZE will make sure you never throw another punch!"},
-            53: {"name": "RECOOME",      "hp": 80000,  "pl": 71000,  "unlock": "recoome",  "grants": None, "quote": "RECOOME: It's time for THE RECOOME ERASER GUN! Nothing can stop the might of Recoome!"},
-            55: {"name": "BURTER",       "hp": 65000,  "pl": 67000,  "unlock": "burter",   "grants": None, "quote": "BURTER: I am the fastest being in the universe! You won't even SEE me coming!"},
-            58: {"name": "JEICE",        "hp": 65000,  "pl": 67000,  "unlock": "jeice",    "grants": None, "quote": "JEICE: Oi! You're not bad — but the Crusher Ball will finish ya off right quick!"},
-            60: {"name": "GINYU",        "hp": 90000,  "pl": 120000, "unlock": "ginyu",    "grants": None, "quote": "CAPTAIN GINYU: Hmm, your power level is impressive! But I am Captain Ginyu — leader of the Ginyu Force! SPECIAL BEAM CANNON POSE!"},
-            70: {"name": "FRIEZA FORM 1","hp": 220000, "pl": 180000, "unlock": None,       "grants": None, "quote": "FRIEZA: You amuse me, little warrior. I'll give you the honor of witnessing my true power — well, the beginning of it."},
+            35: {"name": "DODORIA",       "hp": 60000,   "pl": 25000,   "unlock": "dodoria",  "grants": None,        "quote": "DODORIA: Lord Frieza's intel was right — you ARE strong. But strong enough? I doubt it!"},
+            40: {"name": "ZARBON",        "hp": 90000,   "pl": 32000,   "unlock": "zarbon",   "grants": None,        "quote": "ZARBON: I'd hate to ruin my beautiful face in a fight with you. Surrender — I may spare you."},
+            50: {"name": "GULDO",         "hp": 70000,   "pl": 18000,   "unlock": "guldo",    "grants": None,        "quote": "GULDO: Ha! My TIME FREEZE will make sure you never throw another punch!"},
+            53: {"name": "RECOOME",       "hp": 200000,  "pl": 90000,   "unlock": "recoome",  "grants": None,        "quote": "RECOOME: It's time for THE RECOOME ERASER GUN! Nothing can stop the might of Recoome!"},
+            55: {"name": "BURTER",        "hp": 180000,  "pl": 85000,   "unlock": "burter",   "grants": None,        "quote": "BURTER: I am the fastest being in the universe! You won't even SEE me coming!"},
+            58: {"name": "JEICE",         "hp": 180000,  "pl": 85000,   "unlock": "jeice",    "grants": None,        "quote": "JEICE: Oi! You're not bad — but the Crusher Ball will finish ya off right quick!"},
+            60: {"name": "GINYU",         "hp": 260000,  "pl": 150000,  "unlock": "ginyu",    "grants": None,        "quote": "CAPTAIN GINYU: Hmm, your power level is impressive! But I am Captain Ginyu — leader of the Ginyu Force! SPECIAL BEAM CANNON POSE!"},
+            70: {"name": "FRIEZA FORM 1", "hp": 550000,  "pl": 200000,  "unlock": None,       "grants": None,        "quote": "FRIEZA: You amuse me, little warrior. I'll give you the honor of witnessing my true power — well, the beginning of it."},
         },
     },
     "FRIEZA": {
+        # saga-relative exponent: at wave 71 exp=0, at wave 100 exp=29
         "minions": [
-            {"name": "ELITE SOLDIER", "base_hp": 800, "hp_scale": 200, "base_pl": 60000, "pl_scale": 1.04},
+            {"name": "ELITE SOLDIER", "base_hp": 8000,  "hp_scale": 1200, "base_pl": 80000,  "pl_scale": 1.045},
         ],
         "bosses": {
-            80:  {"name": "FRIEZA FORM 2", "hp": 380000,  "pl": 500000,   "unlock": None,    "grants": None,         "quote": "FRIEZA: Oh my — you actually survived? Very well, witness my second form. Try not to blink!"},
-            90:  {"name": "FRIEZA FORM 3", "hp": 600000,  "pl": 900000,   "unlock": None,    "grants": None,         "quote": "FRIEZA: You have forced me to transform again. I am truly impressed — and furious."},
-            95:  {"name": "FRIEZA 50%",    "hp": 900000,  "pl": 3000000,  "unlock": None,    "grants": "ssj_namek",  "quote": "FRIEZA: Fine! At 50% power I will END you once and for all! There is no escape from the Emperor of the Universe!"},
-            100: {"name": "FRIEZA 100%",   "hp": 1200000, "pl": 6000000,  "unlock": "frieza","grants": None,         "quote": "FRIEZA: WHAT?! You still stand?! Then DIE — at my FULL POWER! I am the most powerful being in the universe!!!"},
+            80:  {"name": "FRIEZA FORM 2", "hp": 1000000,  "pl": 600000,    "unlock": None,    "grants": None,        "quote": "FRIEZA: Oh my — you actually survived? Very well, witness my second form. Try not to blink!"},
+            90:  {"name": "FRIEZA FORM 3", "hp": 1800000,  "pl": 1200000,   "unlock": None,    "grants": None,        "quote": "FRIEZA: You have forced me to transform again. I am truly impressed — and furious."},
+            95:  {"name": "FRIEZA 50%",    "hp": 3000000,  "pl": 4000000,   "unlock": None,    "grants": "ssj_namek", "quote": "FRIEZA: Fine! At 50% power I will END you once and for all! There is no escape from the Emperor of the Universe!"},
+            100: {"name": "FRIEZA 100%",   "hp": 5000000,  "pl": 8000000,   "unlock": "frieza","grants": None,        "quote": "FRIEZA: WHAT?! You still stand?! Then DIE — at my FULL POWER! I am the most powerful being in the universe!!!"},
         },
     },
 }
@@ -509,7 +513,8 @@ class GameState:
             self.crit_chance = min(0.5, self.crit_chance + 0.15)
 
     def update_stats(self):
-        self.max_hp = int(self.base_max_hp + self.pl * 0.06)
+        # 0.18 coefficient gives 3× more HP than the old 0.06, keeping bosses survivable
+        self.max_hp = int(self.base_max_hp + self.pl * 0.18)
 
     def get_saga(self):
         for s in SAGAS:
@@ -524,8 +529,11 @@ class GameState:
         # ── Named boss wave ───────────────────────────────────────────────────
         if self.wave in pool["bosses"]:
             boss = pool["bosses"][self.wave]
-            # PL = 33% stronger than last minion seen; fall back to hard-coded if no minion yet
-            base_pl = int(self.last_minion_pl * 1.33) if self.last_minion_pl > 0 else boss["pl"]
+            # Boss PL = max(intended floor, 33% above last minion seen).
+            # This keeps named bosses like Frieza at their lore-accurate power while
+            # guaranteeing they're never weaker than what the player just fought.
+            dynamic_pl = int(self.last_minion_pl * 1.33) if self.last_minion_pl > 0 else 0
+            base_pl = max(boss["pl"], dynamic_pl)
             boss_hp = boss["hp"]
             return {
                 "name":     boss["name"],
@@ -544,8 +552,11 @@ class GameState:
 
         # ── Every-10-wave elite (non-named) ──────────────────────────────────
         if self.wave % 10 == 0:
-            elite_pl = int(self.last_minion_pl * 1.33) if self.last_minion_pl > 0 else (10000 + self.wave * 1000)
-            base_hp  = 25000 + self.wave * 2000
+            saga_start_e = next(s["start"] for s in SAGAS if s["name"] == saga_name)
+            rel_exp_e    = max(0, self.wave - saga_start_e)
+            fallback_pl  = 1000 + rel_exp_e * 500
+            elite_pl = int(self.last_minion_pl * 1.33) if self.last_minion_pl > 0 else fallback_pl
+            base_hp  = 5000 + rel_exp_e * 1500
             return {
                 "name": f"ELITE WARRIOR W{self.wave}",
                 "hp": base_hp, "max_hp": base_hp,
@@ -559,10 +570,14 @@ class GameState:
         template = random.choice(pool["minions"])
         mod_key  = random.choice(_get_modifier_pool(self.wave))
         mod      = ENEMY_MODIFIERS[mod_key]
-        hp = int((template["base_hp"] + self.wave * template["hp_scale"]) * mod["hp_mult"])
-        pl = int((template["base_pl"] * (template["pl_scale"] ** (self.wave - 1))) * mod["pl_mult"])
+        # Use saga-relative exponent so NAMEK/FRIEZA minions don't inherit 30+
+        # waves of compounding from the SAIYAN saga start
+        saga_start = next(s["start"] for s in SAGAS if s["name"] == saga_name)
+        rel_exp = max(0, self.wave - saga_start)
+        hp = int((template["base_hp"] + rel_exp * template["hp_scale"]) * mod["hp_mult"])
+        pl = int((template["base_pl"] * (template["pl_scale"] ** rel_exp)) * mod["pl_mult"])
         # Track the raw (unmodified) minion PL for boss scaling
-        self.last_minion_pl = int(template["base_pl"] * (template["pl_scale"] ** (self.wave - 1)))
+        self.last_minion_pl = int(template["base_pl"] * (template["pl_scale"] ** rel_exp))
         return {
             "name":     template["name"],
             "hp": hp, "max_hp": hp, "pl": pl, "boss": False,
@@ -746,9 +761,11 @@ def _enemy_attack(state):
         return f"{state.enemy['name']} missed!", False, None, None
 
     is_boss = state.enemy.get("boss", False)
-    e_base  = state.enemy["pl"] * 0.07
+    # Reduced base coefficient — was 0.07, now 0.055 — so high-PL bosses
+    # don't instantly one-shot the player before they can react
+    e_base  = state.enemy["pl"] * 0.055
     if is_boss:
-        e_base *= 1.25
+        e_base *= 1.20
 
     # Boss signature move (22% chance for 1.5× base damage)
     special_move = None
@@ -762,6 +779,10 @@ def _enemy_attack(state):
     if state.is_guarding:
         e_dmg = int(e_dmg * 0.25)
     e_dmg = max(20, e_dmg)
+    # Cap incoming damage at 42% of player max HP per hit so no boss can one-shot
+    if state.max_hp > 0:
+        incoming_cap = int(state.max_hp * 0.42)
+        e_dmg = min(e_dmg, incoming_cap)
     state.hp = max(0, state.hp - e_dmg)
     state.run_stats["dmg_taken"] = state.run_stats.get("dmg_taken", 0) + e_dmg
     state.kill_streak = 0  # being hit breaks the streak
@@ -1049,8 +1070,7 @@ def battle_action():
             state.zeni += 800
 
         zenkai_triggered = state.apply_zenkai()
-        # Kill PL gain reduced: 0.12 → 0.07 to keep early progression tighter
-        pl_gained = int(state.enemy["pl"] * 0.07 * state.pl_kill_mult)
+        pl_gained = int(state.enemy["pl"] * 0.05 * state.pl_kill_mult)
         state.pl += pl_gained
 
         # HP on kill passive
