@@ -16,14 +16,14 @@
     }
     *{margin:0;padding:0;box-sizing:border-box}
     body{background:var(--bg);color:var(--green);font-family:"Courier New",monospace;
-         width:1350px;height:800px;overflow:hidden;user-select:none}
+         width:1350px;min-height:100vh;overflow:hidden;user-select:none}
     /* ── SCANLINES ── */
     body::after{content:"";pointer-events:none;position:fixed;inset:0;
       background:repeating-linear-gradient(0deg,transparent,transparent 2px,
         rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);z-index:9999}
     /* ── SCREENS ── */
     .screen{position:absolute;inset:0;display:flex;flex-direction:column;
-            background:var(--bg);z-index:10}
+            background:var(--bg);z-index:10;min-height:100vh}
     .hidden{display:none!important}
     /* ── BOOT ── */
     #screen-boot{align-items:center;justify-content:center;gap:6px}
@@ -57,63 +57,74 @@
       flex-direction:column;align-items:center;justify-content:center;
       background:rgba(10,13,15,.85);font-size:9px;letter-spacing:2px;color:var(--dim)}
     /* ── GAME LAYOUT ── */
-    #screen-game{flex-direction:row;height:800px}
-    .panel-left,.panel-right{width:220px;background:var(--panel);
-      border-right:1px solid var(--border);padding:12px;
-      display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+    #screen-game{flex-direction:row;height:100vh;min-height:100vh}
+    .panel-left,.panel-right{width:230px;background:var(--panel);
+      border-right:1px solid var(--border);padding:14px;
+      display:flex;flex-direction:column;gap:9px;flex-shrink:0;overflow-y:auto}
     .panel-right{border-right:none;border-left:1px solid var(--border)}
     .arena{flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border)}
     /* ── BARS ── */
-    .bar-wrap{display:flex;flex-direction:column;gap:2px}
-    .bar-label{font-size:10px;letter-spacing:2px;color:var(--dim)}
-    .bar-outer{height:12px;background:#0c1a12;border:1px solid var(--border)}
+    .bar-wrap{display:flex;flex-direction:column;gap:3px}
+    .bar-label{font-size:12px;letter-spacing:2px;color:var(--dim)}
+    .bar-outer{height:13px;background:#0c1a12;border:1px solid var(--border)}
     .bar-inner{height:100%;transition:width .4s ease}
     .bar-hp .bar-inner{background:linear-gradient(90deg,#00cc44,#00ff88)}
     .bar-ki .bar-inner{background:linear-gradient(90deg,#0066ff,var(--blue))}
     .bar-ehp .bar-inner{background:linear-gradient(90deg,#cc2200,var(--red))}
-    .bar-val{font-size:10px;color:var(--green);margin-top:1px}
+    .bar-val{font-size:12px;color:var(--green);margin-top:1px}
     /* ── PLAYER PANEL ── */
-    .p-name{font-size:14px;color:var(--gold);letter-spacing:2px}
-    .data-line{font-size:11px;color:var(--green);letter-spacing:1px}
+    .p-name{font-size:16px;color:var(--gold);letter-spacing:2px}
+    .data-line{font-size:13px;color:var(--green);letter-spacing:1px}
     .data-dim{color:var(--dim)}
-    #transform-status-panel{border:1px solid var(--border);padding:5px 7px;
+    #transform-status-panel{border:1px solid var(--border);padding:6px 8px;
       background:rgba(255,215,0,.04);display:none}
-    #transform-status-panel .ts-label{font-size:10px;color:var(--dim);letter-spacing:2px}
-    #transform-status-panel .ts-val{font-size:12px;color:var(--gold);font-weight:bold;letter-spacing:2px}
-    #transform-status-panel .ts-drain{font-size:10px;color:var(--red)}
+    #transform-status-panel .ts-label{font-size:11px;color:var(--dim);letter-spacing:2px}
+    #transform-status-panel .ts-val{font-size:14px;color:var(--gold);font-weight:bold;letter-spacing:2px}
+    #transform-status-panel .ts-drain{font-size:11px;color:var(--red)}
     /* ── AUGMENTS ── */
     .aug-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
-    .aug-entry{font-size:10px;color:var(--dim);border-left:2px solid var(--border);
-      padding-left:5px;line-height:1.4}
+    .aug-entry{font-size:11px;color:var(--dim);border-left:2px solid var(--border);
+      padding-left:5px;line-height:1.5}
     .aug-entry .aug-name{color:var(--green)}
     /* ── ARENA TOP ── */
     #arena-top{display:flex;justify-content:space-between;align-items:center;
-      padding:8px 16px;border-bottom:1px solid var(--border);
+      padding:10px 20px;border-bottom:1px solid var(--border);
       background:rgba(0,255,136,.02)}
-    #saga-lbl{font-size:10px;letter-spacing:3px;color:var(--gold)}
-    #wave-lbl{font-size:13px;letter-spacing:2px}
-    #zeni-lbl{font-size:11px;color:var(--gold)}
+    #saga-lbl{font-size:12px;letter-spacing:3px;color:var(--gold)}
+    #wave-lbl{font-size:15px;letter-spacing:2px}
+    #zeni-lbl{font-size:13px;color:var(--gold)}
     /* ── FIGHTER STAGE ── */
     #stage{flex:1;display:flex;align-items:center;justify-content:space-around;
-      position:relative;padding:0 20px;background:rgba(0,20,10,.3)}
-    .fighter-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
-    .fighter-sprite{width:160px;height:200px;object-fit:contain;
+      position:relative;padding:0 30px;background:rgba(0,20,10,.3)}
+    .fighter-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+    .fighter-sprite{width:210px;height:280px;object-fit:contain;
       transition:filter .2s,transform .18s ease-out;image-rendering:pixelated}
     .fighter-sprite.kaioken{
       filter:drop-shadow(0 0 20px rgba(255,80,0,.9)) brightness(1.3)!important}
     .fighter-sprite.ssj{
       filter:drop-shadow(0 0 25px rgba(255,230,0,1)) brightness(1.5)!important}
-    #enemy-bar-wrap{width:200px}
-    #e-name-lbl{font-size:11px;color:var(--red);letter-spacing:2px;text-align:center}
-    #e-mod-lbl{font-size:9px;color:var(--gold);letter-spacing:1px;text-align:center}
+    #enemy-bar-wrap{width:240px}
+    #e-name-lbl{font-size:14px;color:var(--red);letter-spacing:2px;text-align:center}
+    #e-mod-lbl{font-size:11px;color:var(--gold);letter-spacing:1px;text-align:center}
     .anim-e-hit{animation:hit-shake .35s ease}
-    .anim-p-hurt{animation:p-hurt .4s ease}
-    @keyframes hit-shake{0%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(8px)}100%{transform:translateX(0)}}
-    @keyframes p-hurt{0%,100%{filter:none}50%{filter:drop-shadow(0 0 12px rgba(255,60,60,.9)) brightness(.7)}}
+    .anim-p-hurt{animation:p-hurt .45s ease;transition:none!important}
+    @keyframes hit-shake{
+      0%  {transform:translateX(0)}
+      25% {transform:translateX(-14px)}
+      60% {transform:translateX(10px)}
+      100%{transform:translateX(0)}
+    }
+    @keyframes p-hurt{
+      0%   {filter:none;transform:translateX(0)}
+      18%  {filter:drop-shadow(0 0 22px rgba(255,40,40,1)) brightness(.5);transform:translateX(14px)}
+      50%  {filter:drop-shadow(0 0 16px rgba(255,40,40,.8)) brightness(.65);transform:translateX(-9px)}
+      78%  {filter:drop-shadow(0 0 8px rgba(255,40,40,.4));transform:translateX(4px)}
+      100% {filter:none;transform:translateX(0)}
+    }
     /* ── LOG ── */
-    #log-area{height:130px;overflow-y:auto;padding:6px 10px;
+    #log-area{height:140px;overflow-y:auto;padding:6px 12px;
       border-top:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
-    .log-line{font-size:11px;line-height:1.4}
+    .log-line{font-size:12px;line-height:1.45}
     .log-green{color:var(--green)} .log-gold{color:var(--gold)}
     .log-red{color:var(--red)}     .log-blue{color:var(--blue)}
     .log-dim{color:var(--dim)}     .log-purple{color:var(--purple)}
@@ -255,7 +266,7 @@
     <div class="data-line">ZENI: <span id="p-zeni-val" class="data-dim">850</span></div>
     <div class="data-line">CRIT: <span id="p-crit-val" class="data-dim">5%</span></div>
     <div class="data-line">DODGE: <span id="p-dodge-val" class="data-dim">3%</span></div>
-    <div style="font-size:10px;color:var(--dim);letter-spacing:2px;margin-top:4px">AUGMENTS</div>
+    <div style="font-size:12px;color:var(--dim);letter-spacing:2px;margin-top:4px">AUGMENTS</div>
     <div class="aug-list" id="aug-list"></div>
   </div>
 
@@ -301,15 +312,15 @@
 
   <!-- RIGHT PANEL -->
   <div class="panel-right">
-    <div style="font-size:11px;color:var(--gold);letter-spacing:2px">ENEMY INTEL</div>
+    <div style="font-size:13px;color:var(--gold);letter-spacing:2px">ENEMY INTEL</div>
     <div class="data-line">NAME: <span id="e-name-data" class="data-dim">—</span></div>
     <div class="data-line">PL: <span id="e-pl-val"  class="data-dim">—</span></div>
     <div class="data-line">HP: <span id="e-hp-data"  class="data-dim">—</span></div>
     <div class="data-line">TYPE: <span id="e-type-lbl" class="data-dim">—</span></div>
     <div class="data-line">MOD: <span id="e-mod-data" class="data-dim">NONE</span></div>
-    <div style="border-top:1px solid var(--border);padding-top:6px;margin-top:4px;
-                font-size:10px;color:var(--dim);letter-spacing:2px">CONTROLS</div>
-    <div style="font-size:10px;color:var(--dim);line-height:2">
+    <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:6px;
+                font-size:12px;color:var(--dim);letter-spacing:2px">CONTROLS</div>
+    <div style="font-size:12px;color:var(--dim);line-height:2.2">
       [J] STRIKE<br>[S] SPECIALS<br>[T] TRANSFORM<br>[G] GUARD<br>[I] STATUS<br>[ESC] CLOSE
     </div>
   </div>
@@ -437,8 +448,10 @@ const ENEMY_ASSETS = {
 const ANIM_SEQUENCES = {
   goku: {
     jab: [
-      {sprite:"goku_punching-removebg-preview.png", delay:300},
-      {sprite:"goku_standing-removebg-preview.png", delay:200},
+      {sprite:"goku_punching-removebg-preview.png", delay:200},
+      {sprite:"goku_standing-removebg-preview.png", delay:120},
+      {sprite:"goku_punching-removebg-preview.png", delay:200},
+      {sprite:"goku_standing-removebg-preview.png", delay:120},
     ],
     slam: [
       {sprite:"goku_meteor_strike-removebg-preview.png",   delay:280},
@@ -964,7 +977,7 @@ const OS = {
       setTimeout(() => {
         pSprite.classList.remove("anim-p-hurt");
         pSprite.src = `/static/images/${charData.idle}`;
-      }, 440);
+      }, 550);
     }
 
     OS.isBusy = false;
