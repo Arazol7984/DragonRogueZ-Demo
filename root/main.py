@@ -2,22 +2,35 @@ import sqlite3
 import json
 import random
 import os
-from flask import Flask, render_template, jsonify, request, make_response
+import uuid
+from datetime import timedelta
+from flask import Flask, render_template, jsonify, request, make_response, session
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dragon_rogue_z_2026_build")
+app.permanent_session_lifetime = timedelta(days=365)
 
-_states = {}   # ip -> GameState (one live run per IP)
+_states = {}   # player_id -> GameState (one live run per session)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  IP HELPER
 # ─────────────────────────────────────────────────────────────────────────────
 
+def get_player_id():
+    """Return a stable player identifier from a signed session cookie.
+    Creates a new UUID on the first visit and persists it in the browser cookie.
+    This survives IP changes (WiFi ↔ mobile data), NAT, VPNs, and server restarts.
+    """
+    session.permanent = True
+    if "pid" not in session:
+        session["pid"] = str(uuid.uuid4())
+    return session["pid"]
+
+
+# Keep the old name around so any leftover references still work
 def get_client_ip():
-    """Return client IP, honouring common proxy headers."""
-    xff = request.headers.get("X-Forwarded-For", "")
-    return xff.split(",")[0].strip() if xff else (request.remote_addr or "127.0.0.1")
+    return get_player_id()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -618,7 +631,7 @@ class GameState:
 
 
 def current_state():
-    ip = get_client_ip()
+    ip = get_player_id()
     if ip not in _states:
         # Try to restore a run that survived a server restart
         snapshot = load_game_state(ip)
@@ -708,7 +721,7 @@ def index():
 
 @app.route("/get-roster")
 def get_roster():
-    ip = get_client_ip()
+    ip = get_player_id()
     unlocked, zenkai, best_wave, total_runs = get_save_data(ip)
     roster = []
     for char_id, cdata in CHAR_ROSTER.items():
@@ -738,7 +751,7 @@ def select_char():
     char = data.get("character", "goku")
     if char not in CHAR_ROSTER:
         return jsonify({"error": "Unknown character"}), 400
-    ip = get_client_ip()
+    ip = get_player_id()
     unlocked, _, _, _ = get_save_data(ip)
     if char not in unlocked:
         return jsonify({"error": "Character not unlocked"}), 403
@@ -1322,7 +1335,7 @@ def resolve_encounter():
 
 @app.route("/end-run", methods=["POST"])
 def end_run():
-    ip = get_client_ip()
+    ip = get_player_id()
     state = current_state()
     old_best, new_best, total = save_run_end(state.ip, state.zenkai_level, state.wave)
     clear_game_state(ip)   # wipe the persisted run — it's over
@@ -1370,7 +1383,7 @@ def swap_fighter():
     new_char = data.get("character")
     if new_char not in CHAR_ROSTER:
         return jsonify({"error": "Unknown character"}), 400
-    ip = get_client_ip()
+    ip = get_player_id()
     unlocked, _, _, _ = get_save_data(ip)
     if new_char not in unlocked:
         return jsonify({"error": "Character not unlocked yet — defeat their unlock boss first"}), 403
