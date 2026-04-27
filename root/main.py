@@ -132,7 +132,7 @@ _PERSIST_FIELDS = [
     "current_shop", "pending_encounter", "next_boss_preview",
     "zenkai_level",
     # Per-run tracking
-    "one_time_purchased", "last_minion_pl",
+    "one_time_purchased", "per_shop_used", "last_minion_pl",
 ]
 
 
@@ -383,7 +383,7 @@ ALL_SHOP_ITEMS = {
     "heart_cure":          {"name": "Curse Antidote",          "desc": "Remove ALL active curses and restore HP. Amount shown when offered.", "base_cost": 300},
     "master_seal":         {"name": "Roshi's Power Seal",      "desc": "+3 Ki Regen and +10% Crit Chance.",                                   "base_cost": 420},
     "android_core":        {"name": "Android Power Core",      "desc": "Immune to curses permanently. Ki Regen -3/turn.",                     "base_cost": 650},
-    "baba_shop":           {"name": "Baba's Mystery Box",      "desc": "Gamble: random rare reward. One use per run.",                        "base_cost": 200, "one_time": True},
+    "baba_shop":           {"name": "Baba's Mystery Box",      "desc": "Gamble: one random reward per shop visit. Scales with wave.",         "base_cost": 200, "per_shop": True},
     "weighted_gi":         {"name": "Weighted Training Gi",    "desc": "Ki Regen halved. Kill PL gain doubled. MAX x4 stacks.",               "base_cost": 0, "base_cost_calc": True},
     "vitality_surge":      {"name": "Vitality Surge",          "desc": "Restore HP now. Max HP -800 permanently. Amount shown when offered.", "base_cost": 50},
     # ── Dragon Ball wishes (cost 0, only appear when dragon_balls == 7) ────────
@@ -471,8 +471,10 @@ class GameState:
         self.dragon_balls        = 0
         # PL milestone tracking (list of ints — already announced milestones)
         self.pl_milestones_hit   = []
-        # One-time-per-run items (set of item IDs already purchased)
+        # One-time-per-run items (persists the whole run)
         self.one_time_purchased  = []
+        # Items that can only be bought once per shop visit (resets each generate_shop)
+        self.per_shop_used       = []
         # Last minion PL seen — used to scale boss PL dynamically
         self.last_minion_pl      = 0
         # Apply character passive bonuses
@@ -656,10 +658,21 @@ class GameState:
             return f"Random stat boost — PL up to {best:,}, or Crit/Dodge/Def Pen"
         if item_id == "wish_power":
             return f"Shenron DOUBLES your PL — gain {pl:,} PL permanently"
+        if item_id == "baba_shop":
+            wf = min(1.0, max(0.08, self.wave / 50))
+            best_pl  = max(60,  int(pl * 0.10 * wf))
+            worst_pl = max(30,  int(pl * 0.05 * wf))
+            hp_gain  = max(100, int(500 * wf + self.wave * 20))
+            already = item_id in self.per_shop_used
+            suffix = " · ALREADY USED THIS SHOP" if already else " · Once per shop"
+            return f"PL {worst_pl:,}–{best_pl:,}, HP +{hp_gain:,}, Crit, or Lifesteal{suffix}"
         return fallback
 
     def generate_shop(self):
-        # Exclude: dynamic-cost items, wish items, and one-time items already bought
+        # Per-shop items reset each visit so they can be bought once per shop
+        self.per_shop_used = []
+
+        # Exclude: dynamic-cost items, wish items, run-long one-time items already bought
         already_bought = set(self.one_time_purchased)
         all_keys = [
             k for k in ALL_SHOP_ITEMS
@@ -1199,8 +1212,15 @@ def purchase():
     state.run_stats["items"] = state.run_stats.get("items", 0) + 1
     detail = ""
 
-    # Mark one-time items as purchased so they don't reappear
-    if ALL_SHOP_ITEMS.get(item_id, {}).get("one_time"):
+    # Enforce per-shop purchase limit (e.g. Baba — once per shop visit)
+    item_meta = ALL_SHOP_ITEMS.get(item_id, {})
+    if item_meta.get("per_shop"):
+        if item_id in state.per_shop_used:
+            return jsonify({"error": f"Already purchased {item_meta['name']} this shop visit — come back next wave!"}), 400
+        state.per_shop_used.append(item_id)
+
+    # Mark run-long one-time items so they never reappear in the shop
+    if item_meta.get("one_time"):
         if item_id not in state.one_time_purchased:
             state.one_time_purchased.append(item_id)
 
@@ -1290,26 +1310,30 @@ def purchase():
         state.ki_regen = max(1, state.ki_regen - 3)
         detail = f"CURSE IMMUNE · Ki Regen -{3} → {state.ki_regen}/turn"
     elif item_id == "baba_shop":
+        # Rewards scale with wave: small early, reasonable mid-game, capped late
+        # wave_factor: 0.1 at wave 1, 0.5 at wave 25, 1.0 at wave 50+
+        wave_factor = min(1.0, max(0.08, state.wave / 50))
         roll = random.choices(
             ["pl_med", "pl_big", "hp", "crit", "lifesteal"],
             weights=[30, 10, 25, 20, 15]
         )[0]
         if roll == "pl_med":
-            gain = int(state.pl * 0.10)
+            gain = max(30, int(state.pl * 0.05 * wave_factor))
             state.pl += gain
             detail = f"MYSTERY — PL +{gain:,}"
         elif roll == "pl_big":
-            gain = int(state.pl * 0.20)
+            gain = max(60, int(state.pl * 0.10 * wave_factor))
             state.pl += gain
             detail = f"JACKPOT — PL +{gain:,}!"
         elif roll == "hp":
-            state.base_max_hp += 1500
-            detail = "MYSTERY — Max HP +1,500"
+            hp_gain = max(100, int(500 * wave_factor + state.wave * 20))
+            state.base_max_hp += hp_gain
+            detail = f"MYSTERY — Max HP +{hp_gain:,}"
         elif roll == "crit":
-            state.crit_chance = min(0.5, state.crit_chance + 0.08)
+            state.crit_chance = min(0.5, state.crit_chance + 0.05)
             detail = f"MYSTERY — Crit → {round(state.crit_chance*100)}%"
         else:
-            state.lifesteal = min(0.15, state.lifesteal + 0.05)  # cap at 15%
+            state.lifesteal = min(0.15, state.lifesteal + 0.03)  # cap at 15%
             detail = f"MYSTERY — Lifesteal → {round(state.lifesteal*100)}%"
     elif item_id == "weighted_gi":
         if state.pl_kill_mult >= 4.0:
