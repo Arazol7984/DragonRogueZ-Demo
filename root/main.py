@@ -131,6 +131,8 @@ _PERSIST_FIELDS = [
     # Shop state — must persist so purchases still work after a server restart
     "current_shop", "pending_encounter", "next_boss_preview",
     "zenkai_level",
+    # Per-run tracking
+    "one_time_purchased", "last_minion_pl",
 ]
 
 
@@ -336,48 +338,48 @@ def _get_modifier_pool(wave):
 
 ALL_SHOP_ITEMS = {
     # ── Core items ──────────────────────────────────────────────────────────
-    "senzu":          {"name": "Senzu Bean",          "desc": "Fully restores HP and clears all debuffs.",              "base_cost": 120},
-    "gravity_x10":    {"name": "10x Gravity",         "desc": "+20% of your current PL. Costs 10% HP.",                "base_cost": 180},
-    "gravity_x100":   {"name": "100x Gravity",        "desc": "+40% of your current PL. Large spike.",                  "base_cost": 450},
-    "scouter_v3":     {"name": "Prototype Scouter",   "desc": "+15% Crit Chance.",                                      "base_cost": 350},
-    "ki_overdrive":   {"name": "Ki Overdrive",        "desc": "Doubles Ki gain per action.",                            "base_cost": 250},
-    "fruit_tree":     {"name": "Fruit of Might",      "desc": "+15% permanent damage output.",                          "base_cost": 500},
-    "tail_regrow":    {"name": "Ancient Ointment",    "desc": "+8% Lifesteal on every hit.",                            "base_cost": 400},
-    "alloy_plating":  {"name": "Katchin Armor",       "desc": "Reduces incoming damage by 150 flat.",                   "base_cost": 400},
-    "adrenaline":     {"name": "Saiyan Pride",        "desc": "Damage rises the lower your HP falls.",                  "base_cost": 300},
-    "prophetic_fish": {"name": "Oracle Snack",        "desc": "+12% Dodge Chance.",                                     "base_cost": 600},
-    "dende_blessing": {"name": "Grand Elder's Gift",  "desc": "+2500 Max HP permanently.",                              "base_cost": 750},
-    "z_sword":        {"name": "Z-Sword Fragment",    "desc": "+20% Defense Penetration.",                              "base_cost": 550},
-    "spirit_water":   {"name": "Ultra Divine Water",  "desc": "Randomly boosts one stat significantly.",                "base_cost": 400},
-    "yardrat_manual": {"name": "Yardrat Secret",      "desc": "+20% Dodge and Ki Regen boost.",                         "base_cost": 500},
+    "senzu":          {"name": "Senzu Bean",          "desc": "Fully restores HP and clears all debuffs.",                           "base_cost": 120},
+    "gravity_x10":    {"name": "10x Gravity",         "desc": "+12% of your current PL. Costs 10% HP.",                             "base_cost": 180},
+    "gravity_x100":   {"name": "100x Gravity",        "desc": "+25% of your current PL. Large spike.",                              "base_cost": 450},
+    "scouter_v3":     {"name": "Prototype Scouter",   "desc": "+15% Crit Chance.",                                                  "base_cost": 350},
+    "ki_overdrive":   {"name": "Ki Overdrive",        "desc": "Doubles Ki gain per action.",                                        "base_cost": 250},
+    "fruit_tree":     {"name": "Fruit of Might",      "desc": "+10% permanent damage output.",                                      "base_cost": 500},
+    "tail_regrow":    {"name": "Ancient Ointment",    "desc": "+5% Lifesteal on every hit. (Cap: 15%)",                             "base_cost": 400},
+    "alloy_plating":  {"name": "Katchin Armor",       "desc": "Reduces incoming damage by 150 flat.",                               "base_cost": 400},
+    "adrenaline":     {"name": "Saiyan Pride",        "desc": "Damage rises the lower your HP falls.",                              "base_cost": 300},
+    "prophetic_fish": {"name": "Oracle Snack",        "desc": "+10% Dodge Chance.",                                                 "base_cost": 600},
+    "dende_blessing": {"name": "Grand Elder's Gift",  "desc": "+2500 Max HP permanently.",                                          "base_cost": 750},
+    "z_sword":        {"name": "Z-Sword Fragment",    "desc": "+20% Defense Penetration.",                                          "base_cost": 550},
+    "spirit_water":   {"name": "Ultra Divine Water",  "desc": "Randomly boosts one stat (PL, HP, Crit, Dodge, or Def Pen).",        "base_cost": 400},
+    "yardrat_manual": {"name": "Yardrat Secret",      "desc": "+10% Dodge and +2 Ki Regen.",                                        "base_cost": 500},
     # ── Roguelite items (trade-offs) ─────────────────────────────────────────
-    "heart_cure":          {"name": "Curse Antidote",          "desc": "Remove ALL active curses and restore 25% HP.",              "base_cost": 300},
-    "master_seal":         {"name": "Roshi's Power Seal",      "desc": "+3 Ki Regen and +10% Crit Chance.",                         "base_cost": 420},
-    "android_core":        {"name": "Android Power Core",      "desc": "Immune to curses permanently. Ki Regen -3/turn.",            "base_cost": 650},
-    "baba_shop":           {"name": "Baba's Mystery Box",      "desc": "Gamble: random rare reward. High risk, high reward.",        "base_cost": 200},
-    "weighted_gi":         {"name": "Weighted Training Gi",    "desc": "Ki Regen halved. Kill PL gain doubled for the run.",         "base_cost": 0, "base_cost_calc": True},
-    "vitality_surge":      {"name": "Vitality Surge",          "desc": "Restore 40% HP now. Max HP -800 permanently.",              "base_cost": 50},
+    "heart_cure":          {"name": "Curse Antidote",          "desc": "Remove ALL active curses and restore 25% HP.",                        "base_cost": 300},
+    "master_seal":         {"name": "Roshi's Power Seal",      "desc": "+3 Ki Regen and +10% Crit Chance.",                                   "base_cost": 420},
+    "android_core":        {"name": "Android Power Core",      "desc": "Immune to curses permanently. Ki Regen -3/turn.",                     "base_cost": 650},
+    "baba_shop":           {"name": "Baba's Mystery Box",      "desc": "Gamble: random rare reward. One use per run.",                        "base_cost": 200, "one_time": True},
+    "weighted_gi":         {"name": "Weighted Training Gi",    "desc": "Ki Regen halved. Kill PL gain doubled. MAX x4 stacks.",               "base_cost": 0, "base_cost_calc": True},
+    "vitality_surge":      {"name": "Vitality Surge",          "desc": "Restore 40% HP now. Max HP -800 permanently.",                        "base_cost": 50},
     # ── Dragon Ball wishes (cost 0, only appear when dragon_balls == 7) ────────
-    "wish_heal":           {"name": "⊛ WISH: Eternal Life",  "desc": "Shenron restores you to full HP and clears all curses.",     "base_cost": 0},
-    "wish_power":          {"name": "⊛ WISH: True Power",    "desc": "Shenron DOUBLES your current Power Level permanently.",      "base_cost": 0},
-    "wish_money":          {"name": "⊛ WISH: Infinite Zeni", "desc": "Shenron grants 5,000 Zeni and a random rare augment.",       "base_cost": 0},
+    "wish_heal":           {"name": "⊛ WISH: Eternal Life",  "desc": "Shenron restores you to full HP and clears all curses.",              "base_cost": 0},
+    "wish_power":          {"name": "⊛ WISH: True Power",    "desc": "Shenron DOUBLES your current Power Level permanently.",               "base_cost": 0},
+    "wish_money":          {"name": "⊛ WISH: Infinite Zeni", "desc": "Shenron grants 5,000 Zeni and +8% Crit Chance.",                      "base_cost": 0},
     # ── New roguelite items ───────────────────────────────────────────────────
-    "senzu_fragment":      {"name": "Senzu Fragment",          "desc": "Restore 45% HP and remove 1 curse. Cheap triage.",          "base_cost": 75},
-    "hyperbolic_chamber":  {"name": "Hyperbolic Time Chamber", "desc": "Pay 25% current HP now. PL +55% of current. High risk.",    "base_cost": 600},
-    "elder_kai_seal":      {"name": "Elder Kai's Awakening",   "desc": "+8% permanent boost to PL, Max HP, and +1 Ki Regen.",       "base_cost": 700},
-    "geti_star":           {"name": "Geti Star Crystal",       "desc": "Each kill restores 5% max HP. Stacks up to 25%.",           "base_cost": 500},
-    "recovery_module":     {"name": "Katchin Recovery Module", "desc": "Regenerate 2% max HP each turn passively. Stacks.",         "base_cost": 550},
+    "senzu_fragment":      {"name": "Senzu Fragment",          "desc": "Restore 45% HP and remove 1 curse. Cheap triage.",                   "base_cost": 75},
+    "hyperbolic_chamber":  {"name": "Hyperbolic Time Chamber", "desc": "Pay 25% current HP. PL +40% of current. High risk.",                 "base_cost": 600},
+    "elder_kai_seal":      {"name": "Elder Kai's Awakening",   "desc": "+6% permanent boost to PL, Max HP, and +1 Ki Regen.",                "base_cost": 700},
+    "geti_star":           {"name": "Geti Star Crystal",       "desc": "Each kill restores 5% max HP. Stacks up to 25%.",                    "base_cost": 500},
+    "recovery_module":     {"name": "Katchin Recovery Module", "desc": "Regenerate 2% max HP each turn passively. Stacks up to 6%.",         "base_cost": 550},
 }
 
 ENCOUNTER_POOL = [
-    {"id": "roshi",      "title": "MASTER ROSHI ENCOUNTER",   "desc": "Pay 20% of current HP to gain 30% Power Level instantly.",                            "btn": "TRAIN (PAY 20% HP)",  "effect": "roshi_train"},
-    {"id": "baba",       "title": "FORTUNETELLER BABA",       "desc": "Gamble 40% of your Zeni. 55% chance to double it, 45% chance to lose it.",           "btn": "PLACE YOUR BET",      "effect": "baba_wager"},
-    {"id": "yardrat",    "title": "YARDRAT BODY TECHNIQUE",   "desc": "Lose 500 Max HP permanently. Gain +22% Dodge Chance.",                               "btn": "LEARN TECHNIQUE",     "effect": "yardrat_deal"},
-    {"id": "weighted",   "title": "KING KAI'S CHALLENGE",     "desc": "Ki Regen halved for the rest of the run. Kill PL gain doubled.",                     "btn": "ACCEPT CHALLENGE",    "effect": "weighted_training"},
-    {"id": "korin",      "title": "KORIN'S SENZU GIFT",       "desc": "Pay 400 Zeni for an immediate 50% HP restore.",                                      "btn": "PAY 400 Z",           "effect": "korin_heal"},
-    {"id": "oracle",     "title": "ORACLE'S REVELATION",      "desc": "Free intel: learn the exact wave and power of the next boss.",                        "btn": "VIEW INTEL",          "effect": "reveal_next"},
-    {"id": "hyperbolic", "title": "HYPERBOLIC TIME CHAMBER",  "desc": "A full year of training compressed. Lose 30% current HP. Gain 65% PL instantly.",    "btn": "ENTER CHAMBER",       "effect": "hyperbolic_train"},
-    {"id": "bubbles",    "title": "KING KAI'S PLANET",        "desc": "Train with Bubbles the monkey. Pay 300 Zeni. Permanently gain +6% Dodge Chance.",    "btn": "TRAIN WITH BUBBLES",  "effect": "bubbles_train"},
+    {"id": "roshi",      "title": "MASTER ROSHI ENCOUNTER",   "desc": "Roshi pushes your limits. Pay HP to gain PL — exact amounts shown below when offered.", "btn": "TRAIN",               "effect": "roshi_train"},
+    {"id": "baba",       "title": "FORTUNETELLER BABA",       "desc": "Gamble your Zeni. 55% chance to double it, 45% to lose it — bet amount shown live.",    "btn": "PLACE YOUR BET",      "effect": "baba_wager"},
+    {"id": "yardrat",    "title": "YARDRAT BODY TECHNIQUE",   "desc": "Lose 500 Max HP permanently. Gain +15% Dodge Chance.",                                  "btn": "LEARN TECHNIQUE",     "effect": "yardrat_deal"},
+    {"id": "weighted",   "title": "KING KAI'S CHALLENGE",     "desc": "Ki Regen halved for the rest of the run. Kill PL gain doubled.",                        "btn": "ACCEPT CHALLENGE",    "effect": "weighted_training"},
+    {"id": "korin",      "title": "KORIN'S SENZU GIFT",       "desc": "Pay 400 Zeni for an immediate 50% HP restore.",                                         "btn": "PAY 400 Z",           "effect": "korin_heal"},
+    {"id": "oracle",     "title": "ORACLE'S REVELATION",      "desc": "Free intel: learn the exact wave and power of the next boss.",                          "btn": "VIEW INTEL",          "effect": "reveal_next"},
+    {"id": "hyperbolic", "title": "HYPERBOLIC TIME CHAMBER",  "desc": "Intense training. Lose HP to gain PL — exact amounts shown live when offered.",         "btn": "ENTER CHAMBER",       "effect": "hyperbolic_train"},
+    {"id": "bubbles",    "title": "KING KAI'S PLANET",        "desc": "Train with Bubbles the monkey. Pay 300 Zeni. Permanently gain +6% Dodge Chance.",       "btn": "TRAIN WITH BUBBLES",  "effect": "bubbles_train"},
 ]
 
 
@@ -442,6 +444,10 @@ class GameState:
         self.dragon_balls        = 0
         # PL milestone tracking (list of ints — already announced milestones)
         self.pl_milestones_hit   = []
+        # One-time-per-run items (set of item IDs already purchased)
+        self.one_time_purchased  = []
+        # Last minion PL seen — used to scale boss PL dynamically
+        self.last_minion_pl      = 0
         # Apply character passive bonuses
         self._apply_passive()
         self.update_stats()
@@ -514,13 +520,18 @@ class GameState:
     def spawn_enemy(self):
         saga_name = self.get_saga()
         pool = ENEMY_POOLS.get(saga_name, ENEMY_POOLS["SAIYAN"])
+
+        # ── Named boss wave ───────────────────────────────────────────────────
         if self.wave in pool["bosses"]:
             boss = pool["bosses"][self.wave]
+            # PL = 33% stronger than last minion seen; fall back to hard-coded if no minion yet
+            base_pl = int(self.last_minion_pl * 1.33) if self.last_minion_pl > 0 else boss["pl"]
+            boss_hp = boss["hp"]
             return {
                 "name":     boss["name"],
-                "hp":       boss["hp"],
-                "max_hp":   boss["hp"],
-                "pl":       boss["pl"],
+                "hp":       boss_hp,
+                "max_hp":   boss_hp,
+                "pl":       base_pl,
                 "boss":     True,
                 "modifier": None,
                 "dodge":    0.0,
@@ -528,22 +539,30 @@ class GameState:
                 "dmg_mult": 1.0,
                 "unlock":   boss.get("unlock"),
                 "grants":   boss.get("grants"),
+                "quote":    boss.get("quote"),
             }
+
+        # ── Every-10-wave elite (non-named) ──────────────────────────────────
         if self.wave % 10 == 0:
-            base = 25000 + self.wave * 2000
+            elite_pl = int(self.last_minion_pl * 1.33) if self.last_minion_pl > 0 else (10000 + self.wave * 1000)
+            base_hp  = 25000 + self.wave * 2000
             return {
                 "name": f"ELITE WARRIOR W{self.wave}",
-                "hp": base, "max_hp": base,
-                "pl": 10000 + self.wave * 1000,
+                "hp": base_hp, "max_hp": base_hp,
+                "pl": elite_pl,
                 "boss": True, "modifier": None,
                 "dodge": 0.0, "armor": 0, "dmg_mult": 1.0,
                 "unlock": None, "grants": None,
             }
+
+        # ── Regular minion ────────────────────────────────────────────────────
         template = random.choice(pool["minions"])
         mod_key  = random.choice(_get_modifier_pool(self.wave))
         mod      = ENEMY_MODIFIERS[mod_key]
         hp = int((template["base_hp"] + self.wave * template["hp_scale"]) * mod["hp_mult"])
         pl = int((template["base_pl"] * (template["pl_scale"] ** (self.wave - 1))) * mod["pl_mult"])
+        # Track the raw (unmodified) minion PL for boss scaling
+        self.last_minion_pl = int(template["base_pl"] * (template["pl_scale"] ** (self.wave - 1)))
         return {
             "name":     template["name"],
             "hp": hp, "max_hp": hp, "pl": pl, "boss": False,
@@ -566,7 +585,14 @@ class GameState:
         return None
 
     def generate_shop(self):
-        all_keys = [k for k in ALL_SHOP_ITEMS if not ALL_SHOP_ITEMS[k].get("base_cost_calc")]
+        # Exclude: dynamic-cost items, wish items, and one-time items already bought
+        already_bought = set(self.one_time_purchased)
+        all_keys = [
+            k for k in ALL_SHOP_ITEMS
+            if not ALL_SHOP_ITEMS[k].get("base_cost_calc")
+            and not k.startswith("wish_")
+            and k not in already_bought
+        ]
         # Pity Senzu: if HP < 20%, guarantee it
         if self.hp < self.max_hp * 0.20 and "senzu" not in [i["id"] for i in self.current_shop]:
             pool_keys = random.sample([k for k in all_keys if k != "senzu"],
@@ -583,8 +609,8 @@ class GameState:
             item["cost"] = int(item["base_cost"] * scale)
             self.current_shop.append(item)
 
-        # Dynamic-cost items (weighted_gi)
-        if "weighted_gi" in ALL_SHOP_ITEMS:
+        # Dynamic-cost items (weighted_gi) — only if not at pl_kill_mult cap (x4)
+        if self.pl_kill_mult < 4.0:
             self.current_shop.append({
                 **ALL_SHOP_ITEMS["weighted_gi"],
                 "id": "weighted_gi",
@@ -599,8 +625,26 @@ class GameState:
                 w["cost"] = 0
                 self.current_shop.insert(0, w)
 
-        # 28% chance of a random encounter offer
-        self.pending_encounter = random.choice(ENCOUNTER_POOL).copy() if random.random() < 0.28 else None
+        # 28% chance of a random encounter offer — enrich with actual numbers
+        if random.random() < 0.28:
+            enc = random.choice(ENCOUNTER_POOL).copy()
+            if enc["effect"] == "roshi_train":
+                hp_cost = max(1, int(self.hp * 0.15))
+                pl_gain = int(self.pl * 0.18)
+                enc["desc"] = f"Master Roshi's training: Pay {hp_cost:,} HP · Gain {pl_gain:,} PL."
+                enc["btn"]  = f"TRAIN (-{hp_cost:,} HP)"
+            elif enc["effect"] == "baba_wager":
+                bet = max(50, int(self.zeni * 0.30))
+                enc["desc"] = f"Baba's wager: Bet {bet:,} Zeni. 55% chance to win {bet*2:,} Z, 45% to lose it."
+                enc["btn"]  = f"BET {bet:,} Z"
+            elif enc["effect"] == "hyperbolic_train":
+                hp_cost = max(1, int(self.hp * 0.25))
+                pl_gain = int(self.pl * 0.35)
+                enc["desc"] = f"Hyperbolic Time Chamber: Lose {hp_cost:,} HP · Gain {pl_gain:,} PL."
+                enc["btn"]  = f"ENTER (-{hp_cost:,} HP)"
+            self.pending_encounter = enc
+        else:
+            self.pending_encounter = None
         # Boss preview
         self.next_boss_preview = self._find_next_boss()
 
@@ -757,6 +801,13 @@ def select_char():
         return jsonify({"error": "Character not unlocked"}), 403
     state = current_state()
     state.reset(char)
+    # Namek Saga Goku starts mid-saga at wave 30 with 30,000 PL
+    if char == "goku_namek":
+        state.wave = 30
+        state.pl   = 30000
+        state.update_stats()
+        state.hp   = state.max_hp  # refresh HP to new max after PL bump
+        state.enemy = state.spawn_enemy()
     clear_game_state(ip)      # wipe any old saved run for this IP
     save_game_state(state)    # save the fresh run immediately
     transforms = list(CHAR_TRANSFORMS.get(char, {}).keys())
@@ -1066,20 +1117,26 @@ def purchase():
     state.run_stats["items"] = state.run_stats.get("items", 0) + 1
     detail = ""
 
+    # Mark one-time items as purchased so they don't reappear
+    if ALL_SHOP_ITEMS.get(item_id, {}).get("one_time"):
+        if item_id not in state.one_time_purchased:
+            state.one_time_purchased.append(item_id)
+
     if item_id == "senzu":
         state.hp = state.max_hp
         state.status_effects = []
         state.curse_list = []
         detail = "HP fully restored · Curses cleared"
     elif item_id == "gravity_x10":
-        gain = int(state.pl * 0.20)
+        gain = int(state.pl * 0.12)
         state.pl += gain
-        state.hp = max(1, int(state.hp * 0.9))
-        detail = f"PL +{gain:,} (20% of current · HP cost -10%)"
+        hp_cost = max(1, int(state.hp * 0.10))
+        state.hp = max(1, state.hp - hp_cost)
+        detail = f"PL +{gain:,} (12% of current) · HP -{hp_cost:,}"
     elif item_id == "gravity_x100":
-        gain = int(state.pl * 0.40)
+        gain = int(state.pl * 0.25)
         state.pl += gain
-        detail = f"PL +{gain:,} (40% of current)"
+        detail = f"PL +{gain:,} (25% of current)"
     elif item_id == "dende_blessing":
         state.base_max_hp += 2500
         detail = "Max HP +2,500"
@@ -1087,20 +1144,20 @@ def purchase():
         state.def_pen += 0.20
         detail = f"Defense Penetration → {round(state.def_pen*100)}%"
     elif item_id == "prophetic_fish":
-        state.dodge_chance = min(0.45, state.dodge_chance + 0.12)
+        state.dodge_chance = min(0.45, state.dodge_chance + 0.10)
         detail = f"Dodge → {round(state.dodge_chance*100)}%"
     elif item_id == "scouter_v3":
         state.crit_chance = min(0.5, state.crit_chance + 0.15)
         detail = f"Crit → {round(state.crit_chance*100)}%"
     elif item_id == "fruit_tree":
-        state.outgoing_damage_mult *= 1.15
+        state.outgoing_damage_mult *= 1.10
         detail = f"Damage Mult → ×{state.outgoing_damage_mult:.2f}"
     elif item_id == "ki_overdrive":
         state.ki_gain_mult = 2.0
         detail = "Ki Gain x2 active"
     elif item_id == "tail_regrow":
-        state.lifesteal = min(0.5, state.lifesteal + 0.08)
-        detail = f"Lifesteal → {round(state.lifesteal*100)}%"
+        state.lifesteal = min(0.15, state.lifesteal + 0.05)  # hard cap at 15%
+        detail = f"Lifesteal → {round(state.lifesteal*100)}% (cap 15%)"
     elif item_id == "alloy_plating":
         state.flat_reduction += 150
         detail = f"Flat Reduction → {state.flat_reduction}"
@@ -1108,31 +1165,31 @@ def purchase():
         state.adrenaline_scale = max(state.adrenaline_scale, 0.5)
         detail = "Low-HP damage scaling active"
     elif item_id == "yardrat_manual":
-        state.dodge_chance = min(0.45, state.dodge_chance + 0.12)
-        state.ki_regen = min(20, state.ki_regen + 3)
-        detail = f"Dodge → {round(state.dodge_chance*100)}% · Ki Regen +3"
+        state.dodge_chance = min(0.45, state.dodge_chance + 0.10)
+        state.ki_regen = min(20, state.ki_regen + 2)
+        detail = f"Dodge → {round(state.dodge_chance*100)}% · Ki Regen +2"
     elif item_id == "spirit_water":
         roll = random.choice(["pl", "pl2", "hp", "crit", "dodge", "def_pen"])
         if roll == "pl":
-            gain = int(state.pl * 0.20)
-            state.pl += gain
-            detail = f"LUCKY — PL +{gain:,} (20%)"
-        elif roll == "pl2":
             gain = int(state.pl * 0.12)
             state.pl += gain
-            detail = f"PL +{gain:,} (12%)"
+            detail = f"LUCKY — PL +{gain:,}"
+        elif roll == "pl2":
+            gain = int(state.pl * 0.08)
+            state.pl += gain
+            detail = f"PL +{gain:,}"
         elif roll == "hp":
-            gain = int(state.base_max_hp * 0.18)
+            gain = int(state.base_max_hp * 0.12)
             state.base_max_hp += gain
-            detail = f"Max HP +{gain:,} (18%)"
+            detail = f"Max HP +{gain:,}"
         elif roll == "crit":
-            state.crit_chance = min(0.5, state.crit_chance + 0.1)
+            state.crit_chance = min(0.5, state.crit_chance + 0.08)
             detail = f"Crit → {round(state.crit_chance*100)}%"
         elif roll == "dodge":
-            state.dodge_chance = min(0.45, state.dodge_chance + 0.1)
+            state.dodge_chance = min(0.45, state.dodge_chance + 0.08)
             detail = f"Dodge → {round(state.dodge_chance*100)}%"
         else:
-            state.def_pen += 0.12
+            state.def_pen += 0.10
             detail = f"Def Pen → {round(state.def_pen*100)}%"
     # ── Roguelite items ───────────────────────────────────────────────────────
     elif item_id == "heart_cure":
@@ -1156,11 +1213,11 @@ def purchase():
             weights=[30, 10, 25, 20, 15]
         )[0]
         if roll == "pl_med":
-            gain = int(state.pl * 0.18)
+            gain = int(state.pl * 0.10)
             state.pl += gain
             detail = f"MYSTERY — PL +{gain:,}"
         elif roll == "pl_big":
-            gain = int(state.pl * 0.40)
+            gain = int(state.pl * 0.20)
             state.pl += gain
             detail = f"JACKPOT — PL +{gain:,}!"
         elif roll == "hp":
@@ -1170,12 +1227,14 @@ def purchase():
             state.crit_chance = min(0.5, state.crit_chance + 0.08)
             detail = f"MYSTERY — Crit → {round(state.crit_chance*100)}%"
         else:
-            state.lifesteal = min(0.5, state.lifesteal + 0.06)
+            state.lifesteal = min(0.15, state.lifesteal + 0.05)  # cap at 15%
             detail = f"MYSTERY — Lifesteal → {round(state.lifesteal*100)}%"
     elif item_id == "weighted_gi":
+        if state.pl_kill_mult >= 4.0:
+            return jsonify({"error": "Weighted Training Gi already at MAX (x4)"}), 400
         state.ki_regen = max(1, state.ki_regen // 2)
         state.pl_kill_mult = min(4.0, state.pl_kill_mult * 2.0)
-        detail = f"Ki Regen halved → {state.ki_regen}/turn · Kill PL ×{state.pl_kill_mult:.1f}"
+        detail = f"Ki Regen halved → {state.ki_regen}/turn · Kill PL ×{state.pl_kill_mult:.1f} (MAX x4)"
     elif item_id == "vitality_surge":
         heal = int(state.max_hp * 0.40)
         state.base_max_hp = max(200, state.base_max_hp - 800)
@@ -1193,13 +1252,13 @@ def purchase():
         cost_hp = max(1, int(state.hp * 0.25))
         if state.hp - cost_hp <= 1:
             return jsonify({"error": "HP too low — need more HP to endure the chamber"}), 400
-        gain = int(state.pl * 0.55)
+        gain = int(state.pl * 0.40)
         state.hp = max(1, state.hp - cost_hp)
         state.pl += gain
-        detail = f"HP -{cost_hp:,} · PL +{gain:,} (55% of current)"
+        detail = f"HP -{cost_hp:,} · PL +{gain:,} (40% of current)"
     elif item_id == "elder_kai_seal":
-        pl_gain = int(state.pl * 0.08)
-        hp_gain = int(state.base_max_hp * 0.08)
+        pl_gain = int(state.pl * 0.06)
+        hp_gain = int(state.base_max_hp * 0.06)
         state.pl += pl_gain
         state.base_max_hp += hp_gain
         state.ki_regen = min(20, state.ki_regen + 1)
@@ -1266,22 +1325,22 @@ def resolve_encounter():
     msg = ""
 
     if effect == "roshi_train":
-        cost = max(1, int(state.hp * 0.20))
+        cost = max(1, int(state.hp * 0.15))
         if state.hp - cost <= 0:
             return jsonify({"error": "HP too low to train safely — need > 1 HP after cost"}), 400
-        gain = int(state.pl * 0.30)
+        gain = int(state.pl * 0.18)
         state.hp -= cost
         state.pl += gain
         msg = f"ROSHI TRAINING — PL +{gain:,} · HP -{cost:,}"
 
     elif effect == "baba_wager":
-        bet = max(50, int(state.zeni * 0.40))
+        bet = max(50, int(state.zeni * 0.30))
         if state.zeni < bet:
             return jsonify({"error": "Insufficient Zeni for the wager"}), 400
         state.zeni -= bet
         if random.random() < 0.55:
             state.zeni += bet * 2
-            msg = f"FORTUNE! — Won {bet*2:,} Z"
+            msg = f"FORTUNE! Won {bet*2:,} Z (bet {bet:,} Z)"
         else:
             msg = f"BAD LUCK — Lost {bet:,} Z"
 
@@ -1289,13 +1348,15 @@ def resolve_encounter():
         state.base_max_hp = max(200, state.base_max_hp - 500)
         state.update_stats()
         state.hp = min(state.hp, state.max_hp)
-        state.dodge_chance = min(0.55, state.dodge_chance + 0.22)
+        state.dodge_chance = min(0.55, state.dodge_chance + 0.15)
         msg = f"YARDRAT — Max HP -500 · Dodge → {round(state.dodge_chance*100)}%"
 
     elif effect == "weighted_training":
+        if state.pl_kill_mult >= 4.0:
+            return jsonify({"error": "Kill PL multiplier already at MAX (x4)"}), 400
         state.ki_regen = max(1, state.ki_regen // 2)
         state.pl_kill_mult = min(4.0, state.pl_kill_mult * 2.0)
-        msg = f"KING KAI — Ki Regen halved · Kill PL ×{state.pl_kill_mult:.1f}"
+        msg = f"KING KAI — Ki Regen halved · Kill PL ×{state.pl_kill_mult:.1f} (MAX x4)"
 
     elif effect == "korin_heal":
         if state.zeni < 400:
@@ -1303,7 +1364,7 @@ def resolve_encounter():
         state.zeni -= 400
         heal = int(state.max_hp * 0.50)
         state.hp = min(state.max_hp, state.hp + heal)
-        msg = f"KORIN'S GIFT — HP +{heal:,}"
+        msg = f"KORIN'S GIFT — HP +{heal:,} · Cost: 400 Z"
 
     elif effect == "reveal_next":
         if state.next_boss_preview:
@@ -1313,10 +1374,10 @@ def resolve_encounter():
             msg = "ORACLE — No major boss detected in the next 8 waves."
 
     elif effect == "hyperbolic_train":
-        cost_hp = max(1, int(state.hp * 0.30))
+        cost_hp = max(1, int(state.hp * 0.25))
         if state.hp - cost_hp <= 1:
             return jsonify({"error": "HP too low to endure the chamber — need more HP"}), 400
-        gain = int(state.pl * 0.65)
+        gain = int(state.pl * 0.35)
         state.hp = max(1, state.hp - cost_hp)
         state.pl += gain
         msg = f"HYPERBOLIC TIME CHAMBER — PL +{gain:,} · HP -{cost_hp:,}"
@@ -1326,7 +1387,7 @@ def resolve_encounter():
             return jsonify({"error": "Need 300 Z to train with Bubbles"}), 400
         state.zeni -= 300
         state.dodge_chance = min(0.55, state.dodge_chance + 0.06)
-        msg = f"BUBBLES TRAINING — Dodge → {round(state.dodge_chance*100)}% · Cost: 300 Z"
+        msg = f"BUBBLES TRAINING — Dodge +6% → {round(state.dodge_chance*100)}% · Cost: 300 Z"
 
     state.update_stats()
     save_game_state(state)

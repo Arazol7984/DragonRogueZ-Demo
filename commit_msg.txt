@@ -1,0 +1,8 @@
+fix: full-page arena, bigger panel text, improved animations
+
+- Body uses min-height:100vh so arena fills full viewport height
+- Fighter sprites scaled up from 160x200 to 210x280
+- All panel text increased by 2-3px (bars, data lines, enemy intel, controls)
+- Goku jab is now a double-punch combo (4 frames, more visible impact)
+- Damage-taken animation adds body-shake + red flash with transition override
+  so the shake is not dampened by the sprite transition property
