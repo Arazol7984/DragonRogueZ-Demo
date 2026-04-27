@@ -1,1254 +1,1227 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>DragonRogue Z | Z-TECH Tactical OS v4.0</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <meta name="viewport" content="width=1350" />
+  <title>DragonRogue Z — Scouter OS</title>
   <style>
     :root {
-      --green:  #00ff41;
-      --cyan:   #00e5ff;
-      --gold:   #fcc203;
-      --red:    #ff3c3c;
-      --bg:     #05080a;
-      --glass:  rgba(5, 8, 12, 0.98);
-      --border: rgba(0, 255, 65, 0.22);
-      --brite:  rgba(0, 255, 65, 0.50);
-      --glow:   0 0 22px rgba(0, 255, 65, 0.18);
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      width: 100%; height: 100%;
-      background: var(--bg);
-      overflow: hidden;
-      font-family: 'Orbitron', sans-serif;
-      color: #fff;
-    }
-    .hidden { display: none !important; }
-    .key-hint {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.58rem;
-      opacity: 0.45;
-      margin-left: 3px;
-    }
-    .btn {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 2px;
-      padding: 9px 16px;
-      background: transparent;
-      border: 1px solid var(--green);
-      color: var(--green);
-      cursor: pointer;
-      transition: background 0.15s, box-shadow 0.15s;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-    .btn:hover:not(:disabled) {
-      background: rgba(0,255,65,0.09);
-      box-shadow: 0 0 12px rgba(0,255,65,0.3);
-    }
-    .btn:disabled { opacity: 0.28; cursor: default; }
-    .btn-cyan  { border-color: var(--cyan);  color: var(--cyan); }
-    .btn-cyan:hover:not(:disabled)  { background: rgba(0,229,255,0.09); box-shadow: 0 0 12px rgba(0,229,255,0.3); }
-    .btn-gold  { border-color: var(--gold);  color: var(--gold); }
-    .btn-gold:hover:not(:disabled)  { background: rgba(252,194,3,0.09); box-shadow: 0 0 12px rgba(252,194,3,0.3); }
-    .btn-red   { border-color: var(--red);   color: var(--red); }
-    .btn-red:hover:not(:disabled)   { background: rgba(255,60,60,0.09); box-shadow: 0 0 12px rgba(255,60,60,0.3); }
-    .screen {
-      position: fixed; inset: 0; z-index: 2000;
-      background: var(--glass);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      overflow-y: auto;
-    }
-    #screen-start { padding: 32px 20px; gap: 0; }
-    .start-title {
-      font-family: 'Bangers', serif;
-      font-size: 5.5rem;
-      color: var(--green);
-      text-shadow: 0 0 35px rgba(0,255,65,0.65), 4px 4px #000;
-      letter-spacing: 10px;
-      text-align: center;
-      line-height: 1;
-    }
-    .start-sub {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.7rem;
-      color: var(--cyan);
-      letter-spacing: 5px;
-      text-align: center;
-      margin-top: 6px;
-    }
-    .start-loader {
-      width: 560px; height: 2px;
-      background: var(--border);
-      margin: 18px auto;
-      overflow: hidden; position: relative;
-    }
-    .start-loader::after {
-      content: '';
-      position: absolute; top: 0; left: -60%;
-      width: 60%; height: 100%;
-      background: linear-gradient(90deg, transparent, var(--green), transparent);
-      animation: scan-line 1.8s ease-in-out infinite;
-    }
-    .roster-section-label {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.55rem;
-      letter-spacing: 5px;
-      color: rgba(0,229,255,0.5);
-      text-align: center;
-      margin: 14px 0 6px;
-    }
-    #roster-mount { max-width: 1180px; padding: 0 20px; }
-    .roster-row {
-      display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
-      margin-bottom: 4px;
-    }
-    .char-card {
-      width: 148px; min-height: 210px;
-      background: rgba(0,255,65,0.025);
-      border: 1px solid var(--border);
-      padding: 14px 10px 10px;
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-      transition: all 0.18s;
-    }
-    .char-card.selectable { cursor: pointer; }
-    .char-card.selectable:hover {
-      border-color: var(--brite);
-      background: rgba(0,255,65,0.07);
-      box-shadow: var(--glow);
-      transform: translateY(-5px);
-    }
-    .char-card.locked { opacity: 0.5; border-color: rgba(255,60,60,0.18); }
-    .char-card.soon   { opacity: 0.3; border-color: rgba(255,255,255,0.08); }
-    .card-portrait {
-      width: 88px; height: 100px;
-      object-fit: contain; object-position: bottom;
-    }
-    .card-portrait-ph {
-      width: 88px; height: 100px;
-      background: rgba(255,255,255,0.04);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2.2rem; color: rgba(255,255,255,0.08);
-    }
-    .card-name {
-      font-size: 0.72rem; font-weight: 700;
-      letter-spacing: 3px; color: var(--green);
-      text-align: center;
-    }
-    .card-pl {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.58rem; color: rgba(255,255,255,0.42);
-    }
-    .card-badge {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.52rem; letter-spacing: 2px;
-      padding: 2px 7px; border: 1px solid;
-      text-align: center; margin-top: auto;
-    }
-    .card-badge.red  { color: var(--red);  border-color: var(--red); }
-    .card-badge.grey { color: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.12); }
-    .card-select-btn { margin-top: auto; width: 100%; font-size: 0.6rem; padding: 7px 0; }
-    .start-footer {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.58rem; color: rgba(255,255,255,0.28);
-      letter-spacing: 3px; text-align: center;
-      margin-top: 16px;
-    }
-    #screen-shop { padding: 40px; gap: 0; }
-    .shop-title {
-      font-family: 'Bangers', serif; font-size: 3.8rem;
-      color: var(--gold); letter-spacing: 8px;
-      text-shadow: 0 0 24px rgba(252,194,3,0.5);
-    }
-    .shop-sub {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.62rem; color: rgba(255,255,255,0.35);
-      letter-spacing: 4px; margin: 6px 0 24px;
-    }
-    #shop-mount {
-      display: grid; grid-template-columns: repeat(3, 260px); gap: 14px;
-      margin-bottom: 24px;
-    }
-    .shop-card {
-      background: rgba(252,194,3,0.03);
-      border: 1px solid rgba(252,194,3,0.18);
-      padding: 16px;
-      display: flex; flex-direction: column; gap: 8px;
-      transition: all 0.15s;
-    }
-    .shop-card:hover { background: rgba(252,194,3,0.06); border-color: rgba(252,194,3,0.38); }
-    .shop-item-name { font-size: 0.72rem; font-weight: 700; letter-spacing: 2px; color: var(--gold); }
-    .shop-item-desc {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.6rem; color: rgba(255,255,255,0.45); line-height: 1.55; flex: 1;
-    }
-    .shop-row { display: flex; align-items: center; gap: 20px; margin-top: 4px; }
-    .shop-zeni-display {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.65rem; color: rgba(255,255,255,0.4);
-    }
-    #screen-status {
-      align-items: flex-start; justify-content: flex-start;
-      padding: 46px 40px;
-    }
-    .status-title {
-      font-family: 'Bangers', serif; font-size: 3rem;
-      color: var(--cyan); letter-spacing: 8px;
-      margin-bottom: 22px; align-self: center;
-    }
-    #status-content { width: 100%; max-width: 660px; align-self: center; }
-    .stat-row {
-      display: flex; justify-content: space-between;
-      border-bottom: 1px solid rgba(0,229,255,0.1);
-      padding: 6px 0;
-      font-family: 'Share Tech Mono', monospace; font-size: 0.78rem;
-    }
-    .stat-row-lbl { color: rgba(255,255,255,0.45); }
-    .stat-row-val { color: #fff; }
-    .stat-mods-box {
-      margin-top: 18px; padding: 10px 14px;
-      border: 1px solid rgba(252,194,3,0.28);
-      color: var(--gold);
-      font-family: 'Share Tech Mono', monospace; font-size: 0.68rem; letter-spacing: 2px;
-    }
-    .defeat-title {
-      font-family: 'Bangers', serif; font-size: 6.5rem;
-      color: var(--red); letter-spacing: 10px;
-      text-shadow: 5px 5px #000, 0 0 50px rgba(255,60,60,0.65);
-      margin-bottom: 14px;
-    }
-    .defeat-sub {
-      font-family: 'Share Tech Mono', monospace; font-size: 0.8rem;
-      color: var(--cyan); letter-spacing: 4px;
-      text-align: center; max-width: 520px; margin-bottom: 50px;
-    }
-    #interface-main {
-      position: fixed; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 1350px;
-    }
-    .scouter-frame {
-      display: grid;
-      grid-template-columns: 360px 1fr 360px;
-      height: 800px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      box-shadow: var(--glow), inset 0 0 70px rgba(0,0,0,0.45);
-      position: relative; overflow: hidden;
-    }
-    .scouter-frame::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: repeating-linear-gradient(0deg,
-        transparent, transparent 2px,
-        rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
-      pointer-events: none; z-index: 100;
-    }
-    .panel {
-      display: flex; flex-direction: column; gap: 11px;
-      padding: 22px 18px; overflow: hidden; position: relative;
-    }
-    .panel-left  { border-right: 1px solid var(--border); background: linear-gradient(150deg, rgba(0,255,65,0.025), transparent); }
-    .panel-right { border-left:  1px solid var(--border); background: linear-gradient(210deg, rgba(255,60,60,0.025), transparent); }
-    .section-lbl {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.52rem; letter-spacing: 4px;
-      color: rgba(0,255,65,0.38);
-      border-bottom: 1px solid rgba(0,255,65,0.1);
-      padding-bottom: 4px;
-    }
-    #p-name {
-      font-family: 'Bangers', serif; font-size: 2.3rem;
-      color: var(--green); letter-spacing: 4px; line-height: 1;
-    }
-    .stat-block { display: flex; flex-direction: column; gap: 4px; }
-    .bar-label-row {
-      display: flex; justify-content: space-between;
-      font-family: 'Share Tech Mono', monospace; font-size: 0.58rem;
-      color: rgba(255,255,255,0.38);
-    }
-    .bar-label-row span { color: rgba(255,255,255,0.75); }
-    .bar-track {
-      height: 9px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 5px; overflow: hidden;
-    }
-    .bar-fill     { height: 100%; border-radius: 5px; transition: width 0.32s ease-out; }
-    .hp-fill      { background: linear-gradient(90deg, #009030, #00ff55); box-shadow: 0 0 7px rgba(0,255,65,0.5); }
-    .hp-fill.warn { background: linear-gradient(90deg, #806000, #fcc203); box-shadow: 0 0 7px rgba(252,194,3,0.5); }
-    .hp-fill.crit { background: linear-gradient(90deg, #700000, #ff3c3c); box-shadow: 0 0 7px rgba(255,60,60,0.5); }
-    .ki-fill      { background: linear-gradient(90deg, #004090, #00e5ff); box-shadow: 0 0 7px rgba(0,229,255,0.5); }
-    .ehp-fill     { background: linear-gradient(90deg, #500000, #ff3c3c); box-shadow: 0 0 7px rgba(255,60,60,0.4); }
-    .data-line {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.62rem; color: rgba(255,255,255,0.48); letter-spacing: 1px;
-    }
-    .data-line span { color: rgba(255,255,255,0.9); }
-    .saga-badge {
-      display: inline-block;
-      font-family: 'Share Tech Mono', monospace; font-size: 0.52rem;
-      letter-spacing: 3px; padding: 3px 8px;
-      border: 1px solid rgba(0,229,255,0.38); color: var(--cyan);
-      margin-top: 2px;
-    }
-    #p-mods {
-      font-family: 'Share Tech Mono', monospace; font-size: 0.53rem;
-      color: rgba(252,194,3,0.7); line-height: 1.8;
-    }
-    #e-name {
-      font-family: 'Bangers', serif; font-size: 2rem;
-      color: var(--red); letter-spacing: 3px; line-height: 1;
-    }
-    .mod-badge {
-      display: inline-block;
-      font-family: 'Share Tech Mono', monospace; font-size: 0.52rem;
-      letter-spacing: 3px; padding: 3px 8px; border: 1px solid;
-      margin-top: 3px;
-    }
-    .mod-badge.ALPHA     { color: var(--gold); border-color: var(--gold); }
-    .mod-badge.SWIFT     { color: var(--cyan); border-color: var(--cyan); }
-    .mod-badge.ARMORED   { color: #aaa;        border-color: #555; }
-    .mod-badge.BERSERKER { color: var(--red);  border-color: var(--red); }
-    .boss-badge {
-      display: inline-block;
-      font-family: 'Share Tech Mono', monospace; font-size: 0.52rem;
-      letter-spacing: 3px; padding: 3px 8px;
-      border: 1px solid var(--gold); color: var(--gold); margin-top: 3px;
-    }
-    #e-scan {
-      font-family: 'Share Tech Mono', monospace; font-size: 0.53rem;
-      color: rgba(255,255,255,0.28); line-height: 1.9;
-    }
-    .credits-block {
-      font-family: 'Share Tech Mono', monospace; font-size: 0.44rem;
-      color: rgba(255,255,255,0.12); letter-spacing: 2px; line-height: 1.9;
-      margin-top: auto;
-    }
-    .center-stage {
-      display: flex; flex-direction: column; align-items: center;
-      padding: 14px 18px 10px; gap: 0; position: relative;
-    }
-    .wave-header { text-align: center; line-height: 1; }
-    #wave-tag {
-      font-family: 'Bangers', serif; font-size: 3.6rem;
-      color: var(--green); letter-spacing: 7px;
-      text-shadow: 3px 3px #000;
-    }
-    #saga-tag {
-      font-family: 'Share Tech Mono', monospace; font-size: 0.52rem;
-      color: rgba(0,255,65,0.48); letter-spacing: 5px; margin-top: 1px;
-    }
-    #build-tag {
-      font-family: 'Share Tech Mono', monospace; font-size: 0.46rem;
-      color: rgba(255,255,255,0.13); letter-spacing: 2px; margin-top: 1px;
-    }
-    .arena {
-      display: flex; align-items: flex-end; justify-content: space-around;
-      width: 100%; flex: 1; padding: 0 8px; min-height: 290px;
-    }
-    .fighter-slot {
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-      height: 100%; justify-content: flex-end;
-    }
-    .fighter-sprite {
-      height: 255px; width: auto; max-width: 240px;
-      object-fit: contain; object-position: bottom;
-      filter: drop-shadow(0 0 16px rgba(0,255,65,0.22));
-      transition: filter 0.2s, transform 0.18s ease-out;
-    }
-    .fighter-sprite.enemy {
-      transform: scaleX(-1);
-      filter: drop-shadow(0 0 16px rgba(255,60,60,0.22));
-    }
-    .fighter-lbl {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.52rem; letter-spacing: 3px;
-      color: rgba(255,255,255,0.25);
-    }
-    .vs-lbl {
-      font-family: 'Bangers', serif; font-size: 1.7rem;
-      color: rgba(255,255,255,0.12); align-self: center; padding-bottom: 28px;
-    }
-    .action-area {
-      width: 100%; display: flex; flex-direction: column;
-      align-items: center; gap: 7px; padding-top: 8px;
-    }
-    .action-row { display: flex; gap: 8px; justify-content: center; }
-    .specials-wrap { position: relative; }
-    #skill-menu {
-      display: none; flex-direction: column; gap: 3px;
-      position: absolute; bottom: calc(100% + 7px); left: 50%;
-      transform: translateX(-50%); min-width: 215px;
-      background: rgba(3,6,10,0.98);
-      border: 1px solid var(--brite);
-      padding: 7px; z-index: 300; box-shadow: var(--glow);
-    }
-    #skill-menu.active { display: flex; }
-    .skill-btn { font-size: 0.6rem; text-align: left; }
-    .keybind-row {
-      font-family: 'Share Tech Mono', monospace; font-size: 0.48rem;
-      color: rgba(255,255,255,0.18); letter-spacing: 2px; text-align: center;
-    }
-    #battle-log {
-      width: 1350px; height: 138px;
-      background: rgba(0,0,0,0.82);
-      border-top: 1px solid var(--border);
-      padding: 9px 14px;
-      overflow-y: auto;
-      font-family: 'Share Tech Mono', monospace; font-size: 0.63rem;
-      display: flex; flex-direction: column; gap: 2px;
-    }
-    #battle-log::-webkit-scrollbar { width: 3px; }
-    #battle-log::-webkit-scrollbar-thumb { background: var(--border); }
-    .log-entry { padding: 2px 0 2px 9px; border-left: 2px solid; line-height: 1.4; }
-    .log-entry.green { border-color: var(--green); color: var(--green); }
-    .log-entry.red   { border-color: var(--red);   color: var(--red); }
-    .log-entry.gold  { border-color: var(--gold);  color: var(--gold); }
-    .log-entry.cyan  { border-color: var(--cyan);  color: var(--cyan); }
-    .log-entry.white { border-color: rgba(255,255,255,0.22); color: rgba(255,255,255,0.55); }
-    @keyframes scan-line {
-      0%   { transform: translateX(-100%); }
-      100% { transform: translateX(400%); }
-    }
-    @keyframes strike-fwd {
-      0%   { transform: translateX(0)    scale(1); }
-      35%  { transform: translateX(48px) scale(1.13); }
-      65%  { transform: translateX(28px) scale(1.06); }
-      100% { transform: translateX(0)    scale(1); }
-    }
-    @keyframes e-hit {
-      0%,100% { filter: drop-shadow(0 0 16px rgba(255,60,60,0.22)); }
-      30%,70% { filter: drop-shadow(0 0 32px rgba(255,60,60,1)) brightness(2.2); }
-    }
-    @keyframes e-shake {
-      0%,100% { transform: scaleX(-1) translateX(0); }
-      25%     { transform: scaleX(-1) translateX(-10px); }
-      75%     { transform: scaleX(-1) translateX(10px); }
-    }
-    @keyframes p-hurt-anim {
-      0%,100% { filter: drop-shadow(0 0 16px rgba(0,255,65,0.22)); }
-      50%     { filter: drop-shadow(0 0 22px rgba(255,60,60,0.8)); }
-    }
-    @keyframes zenkai-pulse {
-      0%,100% { background-color: transparent; }
-      50%     { background-color: rgba(252,194,3,0.12); }
-    }
-    .anim-strike { animation: strike-fwd 0.5s ease-in-out; }
-    .anim-e-hit  { animation: e-hit 0.4s ease, e-shake 0.4s ease; }
-    .anim-p-hurt { animation: p-hurt-anim 0.42s ease; }
-    .anim-zenkai { animation: zenkai-pulse 0.7s ease 3; }
+      --bg:    #0a0d0f; --panel: #0f1418; --border: #1e3a2f;
+      --green: #00ff88; --gold:  #ffd700; --red:    #ff4444;
+      --dim:   #4a7a5a; --blue:  #44aaff; --purple: #cc66ff;
+      --scan:  rgba(0,255,136,.05);
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg);color:var(--green);font-family:"Courier New",monospace;
+         width:1350px;height:800px;overflow:hidden;user-select:none}
+    /* ── SCANLINES ── */
+    body::after{content:"";pointer-events:none;position:fixed;inset:0;
+      background:repeating-linear-gradient(0deg,transparent,transparent 2px,
+        rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);z-index:9999}
+    /* ── SCREENS ── */
+    .screen{position:absolute;inset:0;display:flex;flex-direction:column;
+            background:var(--bg);z-index:10}
+    .hidden{display:none!important}
+    /* ── BOOT ── */
+    #screen-boot{align-items:center;justify-content:center;gap:6px}
+    #boot-logo{font-size:42px;color:var(--gold);letter-spacing:6px;text-shadow:0 0 30px var(--gold)}
+    #boot-sub{font-size:13px;color:var(--dim);letter-spacing:4px}
+    /* ── ROSTER ── */
+    #screen-roster{padding:18px 24px;gap:10px}
+    #roster-header{display:flex;justify-content:space-between;align-items:center;
+      border-bottom:1px solid var(--border);padding-bottom:8px}
+    #roster-title{font-size:20px;color:var(--gold);letter-spacing:3px}
+    #zenkai-badge{font-size:11px;color:var(--purple);letter-spacing:2px}
+    #roster-scroll{flex:1;overflow-y:auto;padding-right:4px}
+    .saga-section{margin-bottom:18px}
+    .saga-header{font-size:11px;letter-spacing:4px;color:var(--gold);
+      border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:10px}
+    .saga-category{font-size:10px;color:var(--dim);letter-spacing:3px;
+      margin:8px 0 6px 0;padding-left:4px}
+    .char-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+    .char-card{width:155px;height:110px;border:1px solid var(--border);
+      background:var(--panel);cursor:pointer;position:relative;overflow:hidden;
+      transition:border-color .2s,box-shadow .2s}
+    .char-card:hover{border-color:var(--green);box-shadow:0 0 12px rgba(0,255,136,.3)}
+    .char-card.locked{opacity:.6;cursor:default}
+    .char-card .card-name{position:absolute;bottom:0;left:0;right:0;
+      background:rgba(0,0,0,.75);font-size:10px;letter-spacing:1px;
+      padding:3px 5px;color:var(--green)}
+    .char-card .card-pl{font-size:9px;color:var(--dim)}
+    .char-card .card-lock{position:absolute;top:4px;right:5px;
+      font-size:9px;color:var(--gold)}
+    .char-card .coming-soon{position:absolute;inset:0;display:flex;
+      flex-direction:column;align-items:center;justify-content:center;
+      background:rgba(10,13,15,.85);font-size:9px;letter-spacing:2px;color:var(--dim)}
+    /* ── GAME LAYOUT ── */
+    #screen-game{flex-direction:row;height:800px}
+    .panel-left,.panel-right{width:220px;background:var(--panel);
+      border-right:1px solid var(--border);padding:12px;
+      display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+    .panel-right{border-right:none;border-left:1px solid var(--border)}
+    .arena{flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border)}
+    /* ── BARS ── */
+    .bar-wrap{display:flex;flex-direction:column;gap:2px}
+    .bar-label{font-size:10px;letter-spacing:2px;color:var(--dim)}
+    .bar-outer{height:12px;background:#0c1a12;border:1px solid var(--border)}
+    .bar-inner{height:100%;transition:width .4s ease}
+    .bar-hp .bar-inner{background:linear-gradient(90deg,#00cc44,#00ff88)}
+    .bar-ki .bar-inner{background:linear-gradient(90deg,#0066ff,var(--blue))}
+    .bar-ehp .bar-inner{background:linear-gradient(90deg,#cc2200,var(--red))}
+    .bar-val{font-size:10px;color:var(--green);margin-top:1px}
+    /* ── PLAYER PANEL ── */
+    .p-name{font-size:14px;color:var(--gold);letter-spacing:2px}
+    .data-line{font-size:11px;color:var(--green);letter-spacing:1px}
+    .data-dim{color:var(--dim)}
+    #transform-status-panel{border:1px solid var(--border);padding:5px 7px;
+      background:rgba(255,215,0,.04);display:none}
+    #transform-status-panel .ts-label{font-size:10px;color:var(--dim);letter-spacing:2px}
+    #transform-status-panel .ts-val{font-size:12px;color:var(--gold);font-weight:bold;letter-spacing:2px}
+    #transform-status-panel .ts-drain{font-size:10px;color:var(--red)}
+    /* ── AUGMENTS ── */
+    .aug-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+    .aug-entry{font-size:10px;color:var(--dim);border-left:2px solid var(--border);
+      padding-left:5px;line-height:1.4}
+    .aug-entry .aug-name{color:var(--green)}
+    /* ── ARENA TOP ── */
+    #arena-top{display:flex;justify-content:space-between;align-items:center;
+      padding:8px 16px;border-bottom:1px solid var(--border);
+      background:rgba(0,255,136,.02)}
+    #saga-lbl{font-size:10px;letter-spacing:3px;color:var(--gold)}
+    #wave-lbl{font-size:13px;letter-spacing:2px}
+    #zeni-lbl{font-size:11px;color:var(--gold)}
+    /* ── FIGHTER STAGE ── */
+    #stage{flex:1;display:flex;align-items:center;justify-content:space-around;
+      position:relative;padding:0 20px;background:rgba(0,20,10,.3)}
+    .fighter-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .fighter-sprite{width:160px;height:200px;object-fit:contain;
+      transition:filter .2s,transform .18s ease-out;image-rendering:pixelated}
+    .fighter-sprite.kaioken{
+      filter:drop-shadow(0 0 20px rgba(255,80,0,.9)) brightness(1.3)!important}
+    .fighter-sprite.ssj{
+      filter:drop-shadow(0 0 25px rgba(255,230,0,1)) brightness(1.5)!important}
+    #enemy-bar-wrap{width:200px}
+    #e-name-lbl{font-size:11px;color:var(--red);letter-spacing:2px;text-align:center}
+    #e-mod-lbl{font-size:9px;color:var(--gold);letter-spacing:1px;text-align:center}
+    .anim-e-hit{animation:hit-shake .35s ease}
+    .anim-p-hurt{animation:p-hurt .4s ease}
+    @keyframes hit-shake{0%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(8px)}100%{transform:translateX(0)}}
+    @keyframes p-hurt{0%,100%{filter:none}50%{filter:drop-shadow(0 0 12px rgba(255,60,60,.9)) brightness(.7)}}
+    /* ── LOG ── */
+    #log-area{height:130px;overflow-y:auto;padding:6px 10px;
+      border-top:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+    .log-line{font-size:11px;line-height:1.4}
+    .log-green{color:var(--green)} .log-gold{color:var(--gold)}
+    .log-red{color:var(--red)}     .log-blue{color:var(--blue)}
+    .log-dim{color:var(--dim)}     .log-purple{color:var(--purple)}
+    /* ── ACTIONS ── */
+    #action-area{display:flex;flex-direction:column;gap:5px;
+      padding:8px 10px;border-top:1px solid var(--border);background:rgba(0,0,0,.3)}
+    .action-row{display:flex;gap:6px;flex-wrap:wrap}
+    .btn{background:transparent;border:1px solid var(--border);color:var(--green);
+      font-family:"Courier New",monospace;font-size:11px;letter-spacing:1px;
+      padding:6px 10px;cursor:pointer;transition:all .15s;white-space:nowrap}
+    .btn:hover{border-color:var(--green);background:rgba(0,255,136,.07);
+      box-shadow:0 0 8px rgba(0,255,136,.25)}
+    .btn:disabled{opacity:.35;cursor:default}
+    .btn-gold{border-color:var(--gold)!important;color:var(--gold)!important}
+    .btn-gold:hover{background:rgba(255,215,0,.08)!important;box-shadow:0 0 8px rgba(255,215,0,.3)!important}
+    .btn-red{border-color:var(--red)!important;color:var(--red)!important}
+    .btn-red:hover{background:rgba(255,68,68,.08)!important}
+    .btn-active{background:rgba(0,255,136,.15)!important;border-color:var(--green)!important;
+      box-shadow:0 0 8px rgba(0,255,136,.4)!important}
+    .btn-transform-active{background:rgba(255,215,0,.15)!important;border-color:var(--gold)!important;
+      box-shadow:0 0 10px rgba(255,215,0,.5)!important}
+    .key-hint{font-size:9px;color:var(--dim);margin-left:4px}
+    /* ── SPECIALS / TRANSFORM MENUS ── */
+    .menu-wrap{position:relative;display:inline-block}
+    .fly-menu{display:none;position:absolute;bottom:110%;left:0;
+      background:var(--panel);border:1px solid var(--border);
+      padding:6px;z-index:200;min-width:180px;flex-direction:column;gap:4px}
+    .fly-menu.open{display:flex}
+    .fly-menu .btn{width:100%;text-align:left;font-size:11px}
+    .fly-menu .menu-sep{border-top:1px solid var(--border);margin:3px 0}
+    /* ── SHOP ── */
+    #screen-shop{position:absolute;inset:0;background:rgba(0,0,0,.92);z-index:100;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+    #shop-title{font-size:22px;color:var(--gold);letter-spacing:4px}
+    #shop-wave{font-size:11px;color:var(--dim);letter-spacing:3px}
+    #shop-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:900px}
+    .shop-card{width:240px;background:var(--panel);border:1px solid var(--border);
+      padding:10px;display:flex;flex-direction:column;gap:5px;cursor:pointer;
+      transition:border-color .15s,box-shadow .15s}
+    .shop-card:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(255,215,0,.3)}
+    .shop-name{font-size:12px;color:var(--gold);letter-spacing:1px}
+    .shop-desc{font-size:10px;color:var(--dim);line-height:1.4}
+    .shop-cost{font-size:11px;color:var(--green)}
+    #shop-footer{display:flex;gap:12px;align-items:center}
+    #shop-zeni-lbl{font-size:12px;color:var(--gold)}
+    #reroll-btn{font-size:11px}
+    #reroll-cost-lbl{color:var(--dim);font-size:10px}
+    /* ── STATUS SCREEN ── */
+    #screen-status{position:absolute;inset:0;background:rgba(0,0,0,.95);z-index:100;
+      display:flex;flex-direction:column;padding:24px 32px;gap:12px}
+    #status-header{font-size:18px;color:var(--gold);letter-spacing:4px;border-bottom:1px solid var(--border);padding-bottom:8px}
+    #status-body{display:flex;gap:32px;flex:1}
+    .status-col{display:flex;flex-direction:column;gap:8px;flex:1}
+    .status-section{border:1px solid var(--border);padding:10px;background:var(--panel)}
+    .status-section-title{font-size:10px;color:var(--dim);letter-spacing:3px;
+      border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:6px}
+    .status-stat{font-size:11px;color:var(--green);display:flex;justify-content:space-between}
+    .status-stat span{color:var(--gold)}
+    .aug-badge{font-size:10px;border:1px solid var(--border);padding:3px 6px;
+      color:var(--dim);line-height:1.4}
+    .aug-badge .aug-n{color:var(--green)}
+    /* ── TRANSFORM SCREEN ── */
+    #screen-transform{position:absolute;inset:0;background:rgba(0,0,0,.93);z-index:100;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+    #transform-title{font-size:22px;color:var(--gold);letter-spacing:4px}
+    #transform-char-lbl{font-size:11px;color:var(--dim);letter-spacing:3px}
+    #transform-grid{display:flex;flex-direction:column;gap:8px;min-width:420px}
+    .transform-card{border:1px solid var(--border);padding:10px 14px;
+      display:flex;justify-content:space-between;align-items:center;
+      cursor:pointer;transition:all .15s;background:var(--panel)}
+    .transform-card:hover{border-color:var(--gold);background:rgba(255,215,0,.06)}
+    .transform-card.active-form{border-color:var(--gold);background:rgba(255,215,0,.12);
+      box-shadow:0 0 12px rgba(255,215,0,.4)}
+    .transform-card.locked-form{opacity:.45;cursor:not-allowed}
+    .tc-label{font-size:13px;color:var(--gold);letter-spacing:2px}
+    .tc-mult{font-size:11px;color:var(--green)}
+    .tc-drain{font-size:10px;color:var(--red)}
+    .tc-lock{font-size:9px;color:var(--dim);letter-spacing:1px}
+    #transform-revert{margin-top:4px}
+    #transform-close{font-size:11px}
+    /* ── DEFEAT SCREEN ── */
+    #screen-defeat{position:absolute;inset:0;background:rgba(0,0,0,.94);z-index:200;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+    #defeat-title{font-size:38px;color:var(--red);letter-spacing:6px;
+      text-shadow:0 0 40px var(--red);animation:pulse-red 1s ease infinite alternate}
+    @keyframes pulse-red{0%{text-shadow:0 0 20px var(--red)}100%{text-shadow:0 0 60px var(--red)}}
+    #defeat-wave{font-size:14px;color:var(--dim);letter-spacing:3px}
+    #defeat-pl{font-size:12px;color:var(--green);letter-spacing:2px}
+    #defeat-sprite{width:200px;height:220px;object-fit:contain;image-rendering:pixelated;
+      filter:drop-shadow(0 0 20px rgba(255,68,68,.7))}
+    #defeat-btn{margin-top:8px}
   </style>
 </head>
 <body>
 
-  <div id="screen-start" class="screen">
-    <div class="start-title">DRAGON ROGUE Z</div>
-    <div class="start-sub">Z-TECH TACTICAL OS v4.0 · COMBAT UPLINK ACTIVE</div>
-    <div class="start-loader"></div>
-    <div id="roster-mount"></div>
-    <div class="start-footer" id="zenkai-line">ZENKAI BOOST: LV.0</div>
+<!-- ═══════════ BOOT ═══════════ -->
+<div id="screen-boot" class="screen">
+  <div id="boot-logo">◈  DRAGON ROGUE Z  ◈</div>
+  <div id="boot-sub">SCOUTER OS v4.1 — INITIALIZING</div>
+  <div id="boot-log" style="font-size:11px;color:var(--dim);margin-top:8px;letter-spacing:2px"></div>
+</div>
+
+<!-- ═══════════ ROSTER ═══════════ -->
+<div id="screen-roster" class="screen hidden">
+  <div id="roster-header">
+    <div id="roster-title">◈ SELECT FIGHTER</div>
+    <div id="zenkai-badge">ZENKAI LEVEL: 0</div>
+  </div>
+  <div id="roster-scroll"></div>
+  <div style="font-size:10px;color:var(--dim);padding-top:6px;letter-spacing:2px">
+    [↑↓] NAVIGATE &nbsp; [ENTER] SELECT &nbsp; [LOCKED] BEAT BOSS TO UNLOCK
+  </div>
+</div>
+
+<!-- ═══════════ GAME ═══════════ -->
+<div id="screen-game" class="screen hidden">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <div class="p-name" id="p-name">GOKU</div>
+    <div class="bar-wrap">
+      <div class="bar-label">HP</div>
+      <div class="bar-outer bar-hp"><div class="bar-inner" id="hp-bar" style="width:100%"></div></div>
+      <div class="bar-val" id="hp-val">800 / 800</div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-label">KI</div>
+      <div class="bar-outer bar-ki"><div class="bar-inner" id="ki-bar" style="width:100%"></div></div>
+      <div class="bar-val" id="ki-val">100 / 100</div>
+    </div>
+    <!-- Transformation status indicator -->
+    <div id="transform-status-panel">
+      <div class="ts-label">ACTIVE FORM</div>
+      <div class="ts-val" id="ts-form-lbl">—</div>
+      <div class="ts-drain" id="ts-drain-lbl"></div>
+    </div>
+    <div class="data-line">PL: <span id="p-pl-val" class="data-dim">416</span></div>
+    <div class="data-line">WAVE: <span id="p-wave-val" class="data-dim">1</span></div>
+    <div class="data-line">ZENI: <span id="p-zeni-val" class="data-dim">850</span></div>
+    <div class="data-line">CRIT: <span id="p-crit-val" class="data-dim">5%</span></div>
+    <div class="data-line">DODGE: <span id="p-dodge-val" class="data-dim">3%</span></div>
+    <div style="font-size:10px;color:var(--dim);letter-spacing:2px;margin-top:4px">AUGMENTS</div>
+    <div class="aug-list" id="aug-list"></div>
   </div>
 
-  <div id="screen-shop" class="screen hidden">
-    <div class="shop-title">SALVAGE DEPOT</div>
-    <div class="shop-sub" id="shop-sub-lbl">SECTOR CLEAR — SELECT UPGRADES BEFORE ADVANCING</div>
-    <div id="shop-mount"></div>
-    <div class="shop-row">
-      <button class="btn btn-gold" style="min-width:280px;padding:14px;" onclick="OS.nextWave()">
-        INITIATE NEXT ENCOUNTER <span class="key-hint">[Enter]</span>
-      </button>
-      <button class="btn" id="btn-reroll" style="padding:14px;" onclick="OS.refreshShop()">
-        REROLL SHOP <span id="reroll-cost-lbl" style="opacity:0.5;font-size:0.55rem;"></span>
-      </button>
-      <div class="shop-zeni-display">ZENI: <span id="shop-zeni-val">0</span> Z</div>
+  <!-- ARENA -->
+  <div class="arena">
+    <div id="arena-top">
+      <div id="saga-lbl">SAIYAN SAGA</div>
+      <div id="wave-lbl">WAVE <span id="wave-num">1</span></div>
+      <div id="zeni-lbl">⊛ 850</div>
+    </div>
+    <div id="stage">
+      <div class="fighter-wrap">
+        <img id="p-sprite" class="fighter-sprite"
+             src="/static/images/goku_standing-removebg-preview.png" alt="player" />
+      </div>
+      <div class="fighter-wrap">
+        <div id="enemy-bar-wrap">
+          <div id="e-name-lbl">SAIBAMAN</div>
+          <div id="e-mod-lbl"></div>
+          <div class="bar-outer bar-ehp" style="height:16px">
+            <div class="bar-inner" id="ehp-bar" style="width:100%"></div>
+          </div>
+          <div class="bar-val" id="ehp-val"></div>
+        </div>
+        <img id="e-sprite" class="fighter-sprite"
+             src="/static/images/saibaman_background_img-removebg-preview.png" alt="enemy" />
+      </div>
+    </div>
+    <div id="log-area"></div>
+    <div id="action-area">
+      <div class="action-row">
+        <button class="btn" id="btn-jab"    onclick="OS.act('jab')">STRIKE<span class="key-hint">[J]</span></button>
+        <div class="menu-wrap">
+          <button class="btn" id="btn-specials" onclick="OS.toggleMenu('specials-menu')">SPECIALS<span class="key-hint">[S]</span></button>
+          <div class="fly-menu" id="specials-menu"></div>
+        </div>
+        <button class="btn btn-gold" id="btn-transform-open" onclick="OS.openTransformScreen()">TRANSFORM<span class="key-hint">[T]</span></button>
+        <button class="btn" id="btn-guard"  onclick="OS.act('guard')">GUARD<span class="key-hint">[G]</span></button>
+        <button class="btn" id="btn-status" onclick="OS.showStatus()">STATUS<span class="key-hint">[I]</span></button>
+      </div>
     </div>
   </div>
 
-  <div id="screen-status" class="screen hidden">
-    <div class="status-title">SYSTEM DIAGNOSTIC</div>
-    <div id="status-content"></div>
-    <button
-      class="btn btn-cyan"
-      style="margin-top:28px;align-self:center;min-width:290px;padding:13px;"
-      onclick="document.getElementById('screen-status').classList.add('hidden')"
-    >CLOSE DIAGNOSTICS <span class="key-hint">[Esc]</span></button>
-  </div>
-
-  <div id="screen-defeat" class="screen hidden">
-    <div class="defeat-title">LINK SEVERED</div>
-    <div class="defeat-sub">
-      PILOT VITALS AT ZERO — TACTICAL UPLINK LOST — ALL COMBAT DATA PURGED
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div style="font-size:11px;color:var(--gold);letter-spacing:2px">ENEMY INTEL</div>
+    <div class="data-line">NAME: <span id="e-name-data" class="data-dim">—</span></div>
+    <div class="data-line">PL: <span id="e-pl-val"  class="data-dim">—</span></div>
+    <div class="data-line">HP: <span id="e-hp-data"  class="data-dim">—</span></div>
+    <div class="data-line">TYPE: <span id="e-type-lbl" class="data-dim">—</span></div>
+    <div class="data-line">MOD: <span id="e-mod-data" class="data-dim">NONE</span></div>
+    <div style="border-top:1px solid var(--border);padding-top:6px;margin-top:4px;
+                font-size:10px;color:var(--dim);letter-spacing:2px">CONTROLS</div>
+    <div style="font-size:10px;color:var(--dim);line-height:2">
+      [J] STRIKE<br>[S] SPECIALS<br>[T] TRANSFORM<br>[G] GUARD<br>[I] STATUS<br>[ESC] CLOSE
     </div>
-    <button
-      class="btn btn-red"
-      style="min-width:420px;padding:22px;font-size:0.78rem;"
-      onclick="OS.rebootFromDefeat()"
-    >REBOOT OS / RETURN TO ROSTER</button>
   </div>
+</div>
 
-  <div id="interface-main" class="hidden">
-    <div class="scouter-frame">
-
-      <aside class="panel panel-left">
-        <div class="section-lbl">PILOT BIOMETRICS</div>
-        <div id="p-name">GOKU</div>
-        <div class="stat-block">
-          <div class="bar-label-row">HP <span id="p-hp-val">800 / 800</span></div>
-          <div class="bar-track"><div class="bar-fill hp-fill" id="p-hp-fill" style="width:100%"></div></div>
-        </div>
-        <div class="stat-block">
-          <div class="bar-label-row">KI <span id="p-ki-val">100%</span></div>
-          <div class="bar-track"><div class="bar-fill ki-fill" id="p-ki-fill" style="width:100%"></div></div>
-        </div>
-        <div class="data-line">POWER LEVEL &nbsp;<span id="p-pl">415</span></div>
-        <div class="data-line">ZENI &nbsp;<span id="p-zeni">850 Z</span></div>
-        <div class="data-line">ZENKAI &nbsp;<span id="p-zenkai">LV.0</span></div>
-        <div class="data-line">KI REGEN &nbsp;<span id="p-ki-regen">+8 / turn</span></div>
-        <div id="p-saga-badge" class="saga-badge">SAIYAN SAGA</div>
-        <div class="section-lbl" style="margin-top:auto;">ACTIVE MODS</div>
-        <div id="p-mods">—</div>
-      </aside>
-
-      <main class="center-stage">
-        <div class="wave-header">
-          <div id="wave-tag">SECTOR 01</div>
-          <div id="saga-tag">SAIYAN SAGA</div>
-          <div id="build-tag">BUILD v4.0 · 2026-04-25</div>
-        </div>
-        <div class="arena">
-          <div class="fighter-slot">
-            <img id="p-sprite" class="fighter-sprite" src="" alt="Player" />
-            <div class="fighter-lbl" id="p-lbl">PILOT</div>
-          </div>
-          <div class="vs-lbl">VS</div>
-          <div class="fighter-slot">
-            <img id="e-sprite" class="fighter-sprite enemy" src="" alt="Enemy" />
-            <div class="fighter-lbl" id="e-lbl">THREAT</div>
-          </div>
-        </div>
-        <div class="action-area">
-          <div class="action-row">
-            <button class="btn" onclick="OS.triggerAction('jab')">
-              STRIKE <span class="key-hint">[A]</span>
-            </button>
-            <div class="specials-wrap">
-              <button class="btn btn-cyan" onclick="UI.toggleSkills()">
-                SPECIALS <span class="key-hint">[S]</span>
-              </button>
-              <div id="skill-menu">
-                <button class="btn skill-btn" onclick="OS.triggerSlotSkill('heavy')">
-                  <span id="skill-lbl-heavy">METEOR SLAM</span> <span class="key-hint">[1]</span>
-                </button>
-                <button class="btn skill-btn" onclick="OS.triggerSlotSkill('beam')">
-                  <span id="skill-lbl-beam">KAMEHAMEHA</span> <span class="key-hint">[2]</span>
-                </button>
-                <button class="btn skill-btn" onclick="OS.triggerSlotSkill('ult')">
-                  <span id="skill-lbl-ult">SPIRIT BOMB</span> <span class="key-hint">[3]</span>
-                </button>
-              </div>
-            </div>
-            <button class="btn" onclick="OS.triggerAction('guard')">
-              GUARD <span class="key-hint">[D]</span>
-            </button>
-            <button class="btn btn-cyan" onclick="OS.showStatus()">
-              STATUS <span class="key-hint">[Tab]</span>
-            </button>
-          </div>
-          <div class="keybind-row">
-            [A] STRIKE &nbsp;·&nbsp; [S] SPECIALS &nbsp;·&nbsp; [D] GUARD &nbsp;·&nbsp;
-            [Tab] STATUS &nbsp;·&nbsp; [1] HEAVY &nbsp;·&nbsp; [2] BEAM &nbsp;·&nbsp;
-            [3] ULTIMATE &nbsp;·&nbsp; [Esc] CLOSE
-          </div>
-        </div>
-      </main>
-
-      <aside class="panel panel-right">
-        <div class="section-lbl">THREAT ANALYSIS</div>
-        <div id="e-name">SAIBAMAN</div>
-        <div class="data-line">POWER LEVEL &nbsp;<span id="e-pl">900</span></div>
-        <div class="stat-block">
-          <div class="bar-label-row">HP <span id="e-hp-val">350 / 350</span></div>
-          <div class="bar-track"><div class="bar-fill ehp-fill" id="e-hp-fill" style="width:100%"></div></div>
-        </div>
-        <div id="e-mod-badge" class="mod-badge hidden">—</div>
-        <div id="e-boss-badge" class="boss-badge hidden">BOSS ENCOUNTER</div>
-        <div class="section-lbl" style="margin-top:auto;">SCAN DATA</div>
-        <div id="e-scan">SCANNING...</div>
-        <div class="credits-block">
-          DRAGON ROGUE Z<br>
-          BY JOSHUA BROWNLOW<br>
-          Z-TECH OS v4.0
-        </div>
-      </aside>
-    </div>
-
-    <div id="battle-log"></div>
+<!-- ═══════════ SHOP ═══════════ -->
+<div id="screen-shop" class="screen hidden">
+  <div id="shop-title">◈  POWER UP  ◈</div>
+  <div id="shop-wave">WAVE CLEARED — SELECT AN AUGMENT</div>
+  <div id="shop-grid"></div>
+  <div id="shop-footer">
+    <div id="shop-zeni-lbl">⊛ —</div>
+    <button class="btn" id="reroll-btn" onclick="OS.refreshShop()">
+      REROLL SHOP <span id="reroll-cost-lbl">[— Z]</span>
+    </button>
+    <button class="btn btn-gold" onclick="OS.closeShop()">CONTINUE →<span class="key-hint">[ENTER]</span></button>
   </div>
+</div>
 
-  <script>
-    const ASSETS = {
-      goku: {
-        idle:   "goku_standing-removebg-preview.png",
-        attack: [
-          "goku_punch_1-removebg-preview.png",
-          "goku_strike_1-removebg-preview.png",
-          "goku_punch_2-removebg-preview.png",
-          "goku_strike_2-removebg-preview.png",
-        ],
-        heavy:  "goku_meteor_strike_3-removebg-preview.png",
-        skill:  "goku_fire_big_kamehameha-removebg-preview.png",
-        ult:    "goku_fire_spirit_bomb-removebg-preview.png",
-        guard:  "goku_block_success-removebg-preview.png",
-        hurt:   "goku_take_damage-removebg-preview.png",
-      },
-      raditz: {
-        idle:   "raditz-standing.png",
-        attack: ["raditz-punch-1.png", "raditz-flurry.png", "raditz-kick.png", "raditz-punch-2.png"],
-        heavy:  "raditz-flurry.png",
-        skill:  "raditz-double-sunday.png",
-        ult:    "raditz-split-shot-fire.png",
-        guard:  "raditz-block.png",
-        hurt:   "raditz-damage-taken-1.png",
-      },
-      nappa: {
-        idle:   "nappa-standing.png",
-        attack: ["nappa-punch-start.png", "nappa-combo-1.png", "nappa-punch-2.png", "nappa-combo-2.png"],
-        heavy:  "nappa-combo-3.png",
-        skill:  "nappa-dx-bomber-final.png",
-        ult:    "nappa-mouth-beam-fire.png",
-        guard:  "nappa-block.png",
-        hurt:   "nappa-damage.png",
-      },
-      vegeta: {
-        idle:   "vegeta-standing-removebg-preview.png",
-        attack: [
-          "vegeta-punch-start.png",
-          "vegeta-kick-final.png",
-          "vegeta-punch-final.png",
-          "vegeta-kick-start.png",
-        ],
-        heavy:  "vegeta-meteor-strike-final.png",
-        skill:  "vegeta-galick-gun-fire-final.png",
-        ult:    "vegeta-final-explosion-blast.png",
-        guard:  "vegeta-guard.png",
-        hurt:   "vegeta-damage-start.png",
-      },
-    };
+<!-- ═══════════ STATUS ═══════════ -->
+<div id="screen-status" class="screen hidden">
+  <div id="status-header">◈  SCOUTER READOUT</div>
+  <div id="status-body"></div>
+  <button class="btn btn-gold" onclick="OS.closeStatus()" style="align-self:flex-end">
+    CLOSE <span class="key-hint">[ESC]</span>
+  </button>
+</div>
 
-    // Multi-frame attack sequences played before/during action resolution.
-    // Each frame: { sprite, delay(ms), scale(optional CSS scale factor) }
-    const ANIM_SEQUENCES = {
-      goku: {
-        heavy: [
-          { sprite: "goku_meteor_strike-removebg-preview.png",   delay: 0   },
-          { sprite: "goku_meteor_strike_2-removebg-preview.png", delay: 180 },
-          { sprite: "goku_meteor_strike_3-removebg-preview.png", delay: 360 },
-        ],
-        beam: [
-          { sprite: "goku_charge_kamehameha-removebg-preview.png",  delay: 0   },
-          { sprite: "goku_fire_big_kamehameha-removebg-preview.png", delay: 420, scale: 1.7 },
-        ],
-        ult: [
-          { sprite: "goku_spirit_bomb-removebg-preview.png",      delay: 0   },
-          { sprite: "goku_fire_spirit_bomb-removebg-preview.png", delay: 520, scale: 1.25 },
-        ],
-      },
-      nappa: {
-        heavy: [
-          { sprite: "nappa-combo-1.png", delay: 0   },
-          { sprite: "nappa-combo-2.png", delay: 180 },
-          { sprite: "nappa-combo-3.png", delay: 360 },
-        ],
-        ult: [
-          { sprite: "nappa-mouth-beam-chargeup.png", delay: 0   },
-          { sprite: "nappa-mouth-beam-fire.png",     delay: 480, scale: 1.2 },
-        ],
-      },
-      vegeta: {
-        heavy: [
-          { sprite: "vegeta-meteor-strike-start.png",  delay: 0   },
-          { sprite: "vegeta-meteor-strike-middle.png", delay: 180 },
-          { sprite: "vegeta-meteor-strike-final.png",  delay: 360 },
-        ],
-        beam: [
-          { sprite: "vegeta-galick-gun-windup1.png",    delay: 0   },
-          { sprite: "vegeta-galick-gun-fire1.png",      delay: 240 },
-          { sprite: "vegeta-galick-gun-fire-final.png", delay: 420, scale: 1.3 },
-        ],
-        ult: [
-          { sprite: "vegeta-final-explosion-start.png",  delay: 0   },
-          { sprite: "vegeta-final-explosion-middle.png", delay: 280 },
-          { sprite: "vegeta-final-explosion-blast.png",  delay: 520, scale: 1.35 },
-        ],
-      },
-    };
+<!-- ═══════════ TRANSFORM SELECTION ═══════════ -->
+<div id="screen-transform" class="screen hidden">
+  <div id="transform-title">◈  TRANSFORMATION  ◈</div>
+  <div id="transform-char-lbl">SELECT FORM</div>
+  <div id="transform-grid"></div>
+  <div style="display:flex;gap:10px;margin-top:6px">
+    <button class="btn btn-red" id="transform-revert" onclick="OS.activateTransform('none')">
+      REVERT TO BASE
+    </button>
+    <button class="btn" id="transform-close" onclick="OS.closeTransformScreen()">
+      CANCEL <span class="key-hint">[ESC]</span>
+    </button>
+  </div>
+</div>
 
-    const ENEMY_ASSETS = {
-      "SAIBAMAN":         "saibaman_background_img-removebg-preview.png",
-      "FRIEZA SOLDIER":   "friezasoldier.png",
-      "RADITZ":           "raditz-standing.png",
-      "NAPPA":            "nappa-standing.png",
-      "VEGETA":           "vegeta-standing-removebg-preview.png",
-      "NAMEKIAN WARRIOR": "friezasoldier.png",
-      "DODORIA":          "friezasoldier.png",
-      "ZARBON":           "friezasoldier.png",
-      "FRIEZA":           "friezasoldier.png",
-      "fallback":         "friezasoldier.png",
-    };
+<!-- ═══════════ DEFEAT ═══════════ -->
+<div id="screen-defeat" class="screen hidden">
+  <img id="defeat-sprite" src="/static/images/goku_fainted-removebg-preview.png" alt="defeated" />
+  <div id="defeat-title">DEFEAT</div>
+  <div id="defeat-wave">FELL ON WAVE —</div>
+  <div id="defeat-pl">FINAL POWER LEVEL: —</div>
+  <button class="btn btn-gold" id="defeat-btn" onclick="OS.returnToRoster()">
+    ↩ RETURN TO ROSTER <span class="key-hint">[ENTER]</span>
+  </button>
+</div>
 
-    const SKILL_LAYOUT = {
-      goku: {
-        heavy: { id: "slam",           label: "METEOR SLAM",    sprite: "goku_meteor_strike_3-removebg-preview.png"    },
-        beam:  { id: "kamehameha",     label: "KAMEHAMEHA",     sprite: "goku_fire_big_kamehameha-removebg-preview.png" },
-        ult:   { id: "spirit_bomb",    label: "SPIRIT BOMB",    sprite: "goku_fire_spirit_bomb-removebg-preview.png"    },
-      },
-      raditz: {
-        heavy: { id: "slam",           label: "METEOR SLAM",    sprite: "raditz-flurry.png"           },
-        beam:  { id: "double_sunday",  label: "DOUBLE SUNDAY",  sprite: "raditz-double-sunday.png"    },
-        ult:   { id: "saturday_crash", label: "SATURDAY CRASH", sprite: "raditz-split-shot-fire.png"  },
-      },
-      nappa: {
-        heavy: { id: "slam",           label: "METEOR SLAM",    sprite: "nappa-combo-3.png"           },
-        beam:  { id: "bomber_dx",      label: "BLASTER CANNON", sprite: "nappa-dx-bomber-final.png"   },
-        ult:   { id: "mouth_beam",     label: "MOUTH BEAM",     sprite: "nappa-mouth-beam-fire.png"   },
-      },
-      vegeta: {
-        heavy: { id: "slam",           label: "METEOR SLAM",    sprite: "vegeta-meteor-strike-final.png"   },
-        beam:  { id: "galick_gun",     label: "GALICK GUN",     sprite: "vegeta-galick-gun-fire-final.png" },
-        ult:   { id: "final_flash",    label: "FINAL FLASH",    sprite: "vegeta-final-explosion-blast.png" },
-      },
-    };
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  ASSETS
+// ═══════════════════════════════════════════════════════════════════════════
+const ASSETS = {
+  goku: {
+    idle:   "goku_standing-removebg-preview.png",
+    attack: ["goku_punching-removebg-preview.png"],
+    hurt:   "goku_hurt-removebg-preview.png",
+    fainted:"goku_fainted-removebg-preview.png",
+    specials: {
+      slam:        ["goku_meteor_strike-removebg-preview.png"],
+      kamehameha:  ["goku_charge_kamehameha-removebg-preview.png"],
+      spirit_bomb: ["goku_spirit_bomb-removebg-preview.png"],
+    },
+  },
+  goku_namek: {
+    idle:   "goku_standing-removebg-preview.png",
+    attack: ["goku_punching-removebg-preview.png"],
+    hurt:   "goku_hurt-removebg-preview.png",
+    fainted:"goku_fainted-removebg-preview.png",
+    specials: {
+      slam:        ["goku_meteor_strike-removebg-preview.png"],
+      kamehameha:  ["goku_charge_kamehameha-removebg-preview.png"],
+      spirit_bomb: ["goku_spirit_bomb-removebg-preview.png"],
+    },
+  },
+  raditz: {
+    idle:   "raditz-standing.png",
+    attack: ["raditz-standing.png"],
+    hurt:   "raditz-standing.png",
+    fainted:"raditz-standing.png",
+  },
+  nappa: {
+    idle:   "nappa-standing.png",
+    attack: ["nappa-standing.png"],
+    hurt:   "nappa-standing.png",
+    fainted:"nappa-standing.png",
+  },
+  vegeta: {
+    idle:   "vegeta-standing-removebg-preview.png",
+    attack: ["vegeta-standing-removebg-preview.png"],
+    hurt:   "vegeta-standing-removebg-preview.png",
+    fainted:"vegeta-standing-removebg-preview.png",
+  },
+};
 
-    // Human-readable description for every purchasable buff (used in the status screen)
-    const BUFF_DESCRIPTIONS = {
-      "KI OVERDRIVE":    "All Ki gains are doubled each turn.",
-      "ADRENALINE":      "Outgoing damage scales up as your HP drops.",
-      "FRUIT OF MIGHT":  "All outgoing damage permanently multiplied.",
-      "LIFESTEAL":       "A % of every hit dealt is returned as HP.",
-      "ARMOR":           "Flat damage reduction applied before every hit taken.",
-      "CRIT SCOUTER":    "+15% Crit Chance. Crits deal 1.6× damage.",
-      "YARDRAT MANUAL":  "+Dodge and +Ki Regen permanently.",
-      "Z-SWORD":         "+20% Defense Penetration — bypasses enemy armor.",
-      "KATCHIN ARMOR":   "Reduces all incoming damage by a flat 150.",
-      "ORACLE SNACK":    "+12% Dodge Chance per stack.",
-      "SAIYAN PRIDE":    "Low-HP damage scaling: more pain as you fall.",
-    };
+const ENEMY_ASSETS = {
+  "SAIBAMAN":        "saibaman_background_img-removebg-preview.png",
+  "FRIEZA SOLDIER":  "friezasoldier.png",
+  "NAMEKIAN WARRIOR":"friezasoldier.png",
+  "ELITE SOLDIER":   "friezasoldier.png",
+  "RADITZ":          "raditz-standing.png",
+  "NAPPA":           "nappa-standing.png",
+  "VEGETA":          "vegeta-standing-removebg-preview.png",
+  "DODORIA":         "friezasoldier.png",
+  "ZARBON":          "friezasoldier.png",
+  "GULDO":           "friezasoldier.png",
+  "RECOOME":         "friezasoldier.png",
+  "BURTER":          "friezasoldier.png",
+  "JEICE":           "friezasoldier.png",
+  "GINYU":           "friezasoldier.png",
+  "FRIEZA FORM 1":   "friezasoldier.png",
+  "FRIEZA FORM 2":   "friezasoldier.png",
+  "FRIEZA FORM 3":   "friezasoldier.png",
+  "FRIEZA 50%":      "friezasoldier.png",
+  "FRIEZA 100%":     "friezasoldier.png",
+  "fallback":        "friezasoldier.png",
+};
 
-    const UI = {
-      log(msg, color = "white") {
-        const box = document.getElementById("battle-log");
-        const el  = document.createElement("div");
-        el.className = `log-entry ${color}`;
-        el.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        box.prepend(el);
-      },
-      toggleSkills() {
-        document.getElementById("skill-menu").classList.toggle("active");
-      },
-      closeSkills() {
-        document.getElementById("skill-menu").classList.remove("active");
-      },
-      getSaga(wave) {
-        if (wave <= 30)  return "SAIYAN";
-        if (wave <= 60)  return "NAMEK";
-        if (wave <= 90)  return "FRIEZA";
-        if (wave <= 120) return "ANDROID";
-        if (wave <= 150) return "CELL";
-        return "BUU";
-      },
-      updateDisplay(data) {
-        const { player: p, enemy: e } = data;
-        if (!p) return;
+const ANIM_SEQUENCES = {
+  goku: {
+    jab: [
+      {sprite:"goku_punching-removebg-preview.png", delay:300},
+      {sprite:"goku_standing-removebg-preview.png", delay:200},
+    ],
+    slam: [
+      {sprite:"goku_meteor_strike-removebg-preview.png",   delay:280},
+      {sprite:"goku_meteor_strike_2-removebg-preview.png", delay:280},
+      {sprite:"goku_meteor_strike_3-removebg-preview.png", delay:280},
+      {sprite:"goku_standing-removebg-preview.png",        delay:200},
+    ],
+    kamehameha: [
+      {sprite:"goku_charge_kamehameha-removebg-preview.png",   delay:400},
+      {sprite:"goku_fire_big_kamehameha-removebg-preview.png", delay:500, scale:1.7},
+      {sprite:"goku_standing-removebg-preview.png",            delay:200},
+    ],
+    spirit_bomb: [
+      {sprite:"goku_spirit_bomb-removebg-preview.png",      delay:500},
+      {sprite:"goku_fire_spirit_bomb-removebg-preview.png", delay:600, scale:1.25},
+      {sprite:"goku_standing-removebg-preview.png",         delay:200},
+    ],
+    double_sunday: [
+      {sprite:"goku_punching-removebg-preview.png", delay:300},
+      {sprite:"goku_standing-removebg-preview.png", delay:200},
+    ],
+    bomber_dx: [
+      {sprite:"goku_punching-removebg-preview.png", delay:300},
+      {sprite:"goku_standing-removebg-preview.png", delay:200},
+    ],
+    galick_gun: [
+      {sprite:"goku_charge_kamehameha-removebg-preview.png", delay:400},
+      {sprite:"goku_fire_big_kamehameha-removebg-preview.png", delay:500, scale:1.5},
+      {sprite:"goku_standing-removebg-preview.png", delay:200},
+    ],
+    final_flash: [
+      {sprite:"goku_charge_kamehameha-removebg-preview.png", delay:400},
+      {sprite:"goku_fire_big_kamehameha-removebg-preview.png", delay:500, scale:1.7},
+      {sprite:"goku_standing-removebg-preview.png", delay:200},
+    ],
+  },
+  nappa: {
+    jab: [
+      {sprite:"nappa-standing.png", delay:300},
+    ],
+    slam: [
+      {sprite:"nappa_heavy_1-removebg-preview.png", delay:300},
+      {sprite:"nappa_heavy_2-removebg-preview.png", delay:300},
+      {sprite:"nappa-standing.png", delay:200},
+    ],
+    saturday_crash: [
+      {sprite:"nappa_heavy_1-removebg-preview.png", delay:350},
+      {sprite:"nappa_beam-removebg-preview.png",    delay:500, scale:1.3},
+      {sprite:"nappa-standing.png", delay:200},
+    ],
+    mouth_beam: [
+      {sprite:"nappa_beam-removebg-preview.png", delay:600, scale:1.4},
+      {sprite:"nappa-standing.png", delay:200},
+    ],
+  },
+  vegeta: {
+    jab: [
+      {sprite:"vegeta-standing-removebg-preview.png", delay:300},
+    ],
+    slam: [
+      {sprite:"vegeta_heavy_1-removebg-preview.png", delay:300},
+      {sprite:"vegeta_heavy_2-removebg-preview.png", delay:300},
+      {sprite:"vegeta-standing-removebg-preview.png", delay:200},
+    ],
+    galick_gun: [
+      {sprite:"vegeta_galick_charge-removebg-preview.png", delay:400},
+      {sprite:"vegeta_galick_fire-removebg-preview.png",   delay:500, scale:1.5},
+      {sprite:"vegeta-standing-removebg-preview.png", delay:200},
+    ],
+    final_flash: [
+      {sprite:"vegeta_galick_charge-removebg-preview.png", delay:450},
+      {sprite:"vegeta_galick_fire-removebg-preview.png",   delay:600, scale:1.8},
+      {sprite:"vegeta-standing-removebg-preview.png", delay:200},
+    ],
+  },
+};
+// Share goku sequences to goku_namek
+ANIM_SEQUENCES.goku_namek = ANIM_SEQUENCES.goku;
 
-        document.getElementById("p-name").innerText = p.char.toUpperCase();
-        document.getElementById("p-lbl").innerText  = p.char.toUpperCase();
+const SKILL_LAYOUT = {
+  goku:       ["jab","slam","kamehameha","spirit_bomb"],
+  goku_namek: ["jab","slam","kamehameha","spirit_bomb"],
+  raditz:     ["jab","slam","double_sunday"],
+  nappa:      ["jab","slam","saturday_crash","mouth_beam"],
+  vegeta:     ["jab","slam","galick_gun","final_flash"],
+};
 
-        const hpPct  = Math.max(0, Math.min(100, (p.hp / p.max_hp) * 100));
-        const hpFill = document.getElementById("p-hp-fill");
-        hpFill.style.width = `${hpPct}%`;
-        hpFill.className = "bar-fill hp-fill" + (hpPct < 20 ? " crit" : hpPct < 50 ? " warn" : "");
-        document.getElementById("p-hp-val").innerText =
-          `${Math.round(p.hp).toLocaleString()} / ${(p.max_hp || 0).toLocaleString()}`;
+const SKILL_NAMES = {
+  jab:"STRIKE", slam:"METEOR SLAM", kamehameha:"KAMEHAMEHA",
+  spirit_bomb:"SPIRIT BOMB", double_sunday:"DOUBLE SUNDAY",
+  saturday_crash:"SATURDAY CRASH", mouth_beam:"MOUTH BEAM",
+  galick_gun:"GALICK GUN", final_flash:"FINAL FLASH",
+  bomber_dx:"BOMBER DX",
+};
 
-        const kiPct = Math.min(100, Math.max(0, p.ki || 0));
-        document.getElementById("p-ki-fill").style.width = `${kiPct}%`;
-        document.getElementById("p-ki-val").innerText = `${Math.round(p.ki || 0)}%`;
+const BUFF_DESCRIPTIONS = {
+  senzu:          "Full HP restore + clears status effects.",
+  gravity_x10:    "Power Level +20% of current. HP cost: -10%.",
+  gravity_x100:   "Power Level +40% of current. Massive spike.",
+  scouter_v3:     "Critical hit chance +15%.",
+  ki_overdrive:   "All Ki gains doubled permanently.",
+  fruit_tree:     "Outgoing damage multiplier +15%.",
+  tail_regrow:    "8% lifesteal on all damage dealt.",
+  alloy_plating:  "Flat damage reduction +150 per hit.",
+  adrenaline:     "Damage scales up the lower your HP falls.",
+  prophetic_fish: "Dodge chance +12%.",
+  dende_blessing: "Max HP permanently +2,500.",
+  z_sword:        "Defense penetration +20% on all attacks.",
+  spirit_water:   "Randomly boosts one stat significantly.",
+  yardrat_manual: "Dodge +12% and Ki Regen boosted.",
+};
 
-        document.getElementById("p-pl").innerText       = (p.pl || 0).toLocaleString();
-        document.getElementById("p-zeni").innerText     = `${p.zeni || 0} Z`;
-        document.getElementById("p-zenkai").innerText   = `LV.${p.zenkai_level || 0}`;
-        document.getElementById("p-ki-regen").innerText = `+${p.ki_regen || 8} / turn`;
+// Per-character transformation table (mirrors Python CHAR_TRANSFORMS)
+const CHAR_TRANSFORMS_UI = {
+  goku: [
+    {id:"kaioken_x2", label:"KAIOKEN x2",  mult:"×2 PL",  drain:"5% HP/turn",  req:"kaioken"},
+    {id:"kaioken_x3", label:"KAIOKEN x3",  mult:"×3 PL",  drain:"7.5% HP/turn",req:"kaioken"},
+    {id:"kaioken_x4", label:"KAIOKEN x4",  mult:"×4 PL",  drain:"10% HP/turn", req:"kaioken"},
+  ],
+  goku_namek: [
+    {id:"kaioken_x2",   label:"KAIOKEN x2",   mult:"×2 PL",   drain:"2% HP/turn",   req:null},
+    {id:"kaioken_x5",   label:"KAIOKEN x5",   mult:"×5 PL",   drain:"5% HP/turn",   req:null},
+    {id:"kaioken_x10",  label:"KAIOKEN x10",  mult:"×10 PL",  drain:"7.5% HP/turn", req:null},
+    {id:"kaioken_x20",  label:"KAIOKEN x20",  mult:"×20 PL",  drain:"10% HP/turn",  req:null},
+    {id:"super_saiyan", label:"SUPER SAIYAN", mult:"×50 PL",  drain:"15 Ki/turn",   req:"ssj"},
+  ],
+};
 
-        const wv   = p.wave ?? 1;
-        const saga = UI.getSaga(wv);
-        document.getElementById("wave-tag").innerText     = `SECTOR ${String(wv).padStart(2, "0")}`;
-        document.getElementById("saga-tag").innerText     = `${saga} SAGA`;
-        document.getElementById("p-saga-badge").innerText = `${saga} SAGA`;
+// ═══════════════════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+const UI = {
+  log(msg, style="green") {
+    const area = document.getElementById("log-area");
+    const el = document.createElement("div");
+    el.className = `log-line log-${style}`;
+    el.textContent = `> ${msg}`;
+    area.appendChild(el);
+    area.scrollTop = area.scrollHeight;
+    if (area.children.length > 80) area.removeChild(area.firstChild);
+  },
+  show(id)   { document.getElementById(id).classList.remove("hidden"); },
+  hide(id)   { document.getElementById(id).classList.add("hidden"); },
+  setText(id, t) { document.getElementById(id).textContent = t; },
+  setBar(id, pct) { document.getElementById(id).style.width = `${Math.max(0,Math.min(100,pct))}%`; },
+  fmt(n) { return Number(n).toLocaleString(); },
 
-        const mods = [];
-        if ((p.ki_gain_mult || 1) > 1)          mods.push("KI OVERDRIVE");
-        if ((p.adrenaline_scale || 0) > 0)       mods.push("ADRENALINE");
-        if ((p.outgoing_damage_mult || 1) > 1)   mods.push("FRUIT OF MIGHT");
-        if ((p.lifesteal || 0) > 0)              mods.push(`LIFESTEAL ${Math.round(p.lifesteal * 100)}%`);
-        if ((p.flat_reduction || 0) > 0)         mods.push(`ARMOR -${p.flat_reduction}`);
-        document.getElementById("p-mods").innerText = mods.length ? mods.join("\n") : "—";
+  updateDisplay(data) {
+    const { player: p, enemy: e } = data;
+    if (!p) return;
+    OS.lastPlayer = p;
 
-        document.getElementById("shop-zeni-val").innerText = p.zeni || 0;
+    const hpPct = p.max_hp > 0 ? (p.hp / p.max_hp) * 100 : 0;
+    UI.setBar("hp-bar", hpPct);
+    UI.setText("hp-val", `${UI.fmt(p.hp)} / ${UI.fmt(p.max_hp)}`);
+    const kiPct = (p.ki / 100) * 100;
+    UI.setBar("ki-bar", kiPct);
+    UI.setText("ki-val", `${Math.round(p.ki)} / 100`);
+    UI.setText("p-pl-val",   UI.fmt(p.pl));
+    UI.setText("p-wave-val", p.wave);
+    UI.setText("p-zeni-val", UI.fmt(p.zeni));
+    UI.setText("p-crit-val",  `${Math.round(p.crit_chance * 100)}%`);
+    UI.setText("p-dodge-val", `${Math.round(p.dodge_chance * 100)}%`);
+    UI.setText("wave-num",    p.wave);
+    UI.setText("zeni-lbl",    `⊛ ${UI.fmt(p.zeni)}`);
+    UI.setText("saga-lbl",    `${p.saga || "SAIYAN"} SAGA`);
 
-        if (!e) return;
-        document.getElementById("e-name").innerText = e.name;
-        document.getElementById("e-pl").innerText   = (e.pl || 0).toLocaleString();
-        document.getElementById("e-lbl").innerText  = e.name;
+    // Transform status panel
+    const tsPanel = document.getElementById("transform-status-panel");
+    const pSprite = document.getElementById("p-sprite");
+    if (p.active_transform) {
+      tsPanel.style.display = "block";
+      const tList = CHAR_TRANSFORMS_UI[OS.char] || [];
+      const tData = tList.find(t => t.id === p.active_transform);
+      UI.setText("ts-form-lbl",  tData ? tData.label : p.active_transform.toUpperCase());
+      UI.setText("ts-drain-lbl", tData ? tData.drain : "—");
+      if (p.active_transform === "super_saiyan") {
+        pSprite.classList.remove("kaioken"); pSprite.classList.add("ssj");
+      } else {
+        pSprite.classList.remove("ssj"); pSprite.classList.add("kaioken");
+      }
+    } else {
+      tsPanel.style.display = "none";
+      pSprite.classList.remove("kaioken","ssj");
+    }
 
-        const eHpPct = Math.max(0, Math.min(100, (e.hp / e.max_hp) * 100));
-        document.getElementById("e-hp-fill").style.width = `${eHpPct}%`;
-        document.getElementById("e-hp-val").innerText =
-          `${Math.round(e.hp).toLocaleString()} / ${e.max_hp.toLocaleString()}`;
+    if (e) {
+      const ePct = e.max_hp > 0 ? (e.hp / e.max_hp) * 100 : 0;
+      UI.setBar("ehp-bar", ePct);
+      UI.setText("ehp-val",   `${UI.fmt(e.hp)} / ${UI.fmt(e.max_hp)}`);
+      UI.setText("e-name-lbl", e.name);
+      UI.setText("e-name-data", e.name);
+      UI.setText("e-pl-val",    UI.fmt(e.pl));
+      UI.setText("e-hp-data",   `${UI.fmt(e.hp)} / ${UI.fmt(e.max_hp)}`);
+      UI.setText("e-type-lbl",  e.boss ? "BOSS" : "MINION");
+      UI.setText("e-mod-data",  e.modifier || "NONE");
+      UI.setText("e-mod-lbl",   e.modifier ? `[${e.modifier}]` : "");
+      const eSrc = ENEMY_ASSETS[e.name] || ENEMY_ASSETS["fallback"];
+      document.getElementById("e-sprite").src = `/static/images/${eSrc}`;
+    }
+  },
+};
 
-        const eSrc = ENEMY_ASSETS[e.name] || ENEMY_ASSETS.fallback;
-        document.getElementById("e-sprite").src = `/static/images/${eSrc}`;
+// ═══════════════════════════════════════════════════════════════════════════
+//  OS ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+const OS = {
+  char:        "goku",
+  isBusy:      false,
+  lastPlayer:  null,
+  lastEnemy:   null,
+  activeMenuId: null,
 
-        const modBadge = document.getElementById("e-mod-badge");
-        if (e.modifier) {
-          modBadge.innerText = e.modifier;
-          modBadge.className = `mod-badge ${e.modifier}`;
-        } else {
-          modBadge.className = "mod-badge hidden";
-        }
+  // ── Boot ──────────────────────────────────────────────────────────────
+  async boot() {
+    const bootLog = document.getElementById("boot-log");
+    const lines = [
+      "LOADING BATTLE ENGINE...",
+      "SCANNING ENEMY DATABASE...",
+      "CALIBRATING SCOUTER...",
+      "SYNCING DRAGON BALL DATA...",
+      "READY.",
+    ];
+    for (const l of lines) {
+      bootLog.textContent = l;
+      await new Promise(r => setTimeout(r, 320));
+    }
+    UI.hide("screen-boot"); UI.show("screen-roster");
+    await OS.loadRoster();
+  },
 
-        document.getElementById("e-boss-badge").className =
-          e.boss ? "boss-badge" : "boss-badge hidden";
+  async loadRoster() {
+    const res  = await fetch("/get-roster", {credentials:"include"});
+    const data = await res.json();
 
-        document.getElementById("e-scan").innerHTML = [
-          `THREAT: ${e.boss ? "BOSS" : "MINION"}`,
-          `MOD: ${e.modifier || "NONE"}`,
-          `HP: ${Math.round(e.hp).toLocaleString()} / ${e.max_hp.toLocaleString()}`,
-        ].join("<br>");
+    document.getElementById("zenkai-badge").textContent =
+      `ZENKAI LEVEL: ${data.zenkai}`;
 
-        OS.lastEnemy = e;
-      },
-    };
+    // Organise by saga → category
+    const sections = {};
+    for (const c of data.roster) {
+      const key = c.saga || "SAIYAN";
+      if (!sections[key]) sections[key] = { "Z-WARRIORS": [], "RIVALS": [] };
+      const cat = c.category === "RIVALS" ? "RIVALS" : "Z-WARRIORS";
+      sections[key][cat].push(c);
+    }
 
-    const OS = {
-      isBusy:    false,
-      char:      "goku",
-      lastEnemy: null,
-      jabIndex:  0,
+    const scroll = document.getElementById("roster-scroll");
+    scroll.innerHTML = "";
 
-      refreshSkillLabels() {
-        const L = SKILL_LAYOUT[OS.char] || SKILL_LAYOUT.goku;
-        document.getElementById("skill-lbl-heavy").innerText = L.heavy.label;
-        document.getElementById("skill-lbl-beam").innerText  = L.beam.label;
-        document.getElementById("skill-lbl-ult").innerText   = L.ult.label;
-      },
+    const sagaOrder = ["SAIYAN","NAMEK","FRIEZA","ANDROID","CELL","BUU"];
+    for (const sagaName of sagaOrder) {
+      if (!sections[sagaName]) continue;
+      const sagaDiv = document.createElement("div");
+      sagaDiv.className = "saga-section";
+      sagaDiv.innerHTML = `<div class="saga-header">◈ ${sagaName} SAGA</div>`;
 
-      triggerSlotSkill(slot) {
-        UI.closeSkills();
-        const L   = SKILL_LAYOUT[OS.char] || SKILL_LAYOUT.goku;
-        const s   = L[slot] || L.beam;
-        const seq = (ANIM_SEQUENCES[OS.char] || {})[slot] || null;
-        OS.triggerAction(s.id, s.sprite, seq);
-      },
+      for (const cat of ["Z-WARRIORS","RIVALS"]) {
+        const chars = sections[sagaName][cat];
+        if (!chars || chars.length === 0) continue;
+        const catLabel = document.createElement("div");
+        catLabel.className = "saga-category";
+        catLabel.textContent = `— ${cat} —`;
+        sagaDiv.appendChild(catLabel);
 
-      async triggerAction(skill, directSprite = null, sequence = null) {
-        if (OS.isBusy) return;
-        OS.isBusy = true;
-        UI.closeSkills();
-
-        const pSprite  = document.getElementById("p-sprite");
-        const eSprite  = document.getElementById("e-sprite");
-        const charData = ASSETS[OS.char] || ASSETS.goku;
-
-        if (skill === "guard") {
-          pSprite.src = `/static/images/${charData.guard}`;
-        } else if (skill === "jab") {
-          const frames = charData.attack;
-          pSprite.src  = `/static/images/${frames[OS.jabIndex % frames.length]}`;
-          OS.jabIndex++;
-          pSprite.classList.add("anim-strike");
-          setTimeout(() => pSprite.classList.remove("anim-strike"), 500);
-        } else if (sequence) {
-          // Multi-frame animation — play each frame at its specified delay
-          // scale: optional CSS scale factor applied when the frame fires
-          sequence.forEach(({ sprite, delay, scale }) => {
-            setTimeout(() => {
-              pSprite.src = `/static/images/${sprite}`;
-              pSprite.style.transform = scale ? `scale(${scale})` : '';
-            }, delay);
-          });
-          pSprite.classList.add("anim-strike");
-          setTimeout(() => pSprite.classList.remove("anim-strike"), 500);
-        } else if (directSprite) {
-          pSprite.src = `/static/images/${directSprite}`;
-          pSprite.classList.add("anim-strike");
-          setTimeout(() => pSprite.classList.remove("anim-strike"), 500);
-        }
-
-        try {
-          const res = await fetch("/battle-action", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ skill }),
-          });
-
-          let data;
-          try { data = await res.json(); }
-          catch {
-            UI.log("MALFORMED RESPONSE — DATA LINK ERROR", "red");
-            pSprite.src = `/static/images/${charData.idle}`;
-            OS.isBusy = false;
-            return;
-          }
-
-          if (!res.ok) {
-            UI.log(`${data.error || "ACTION REFUSED"}`, "red");
-            pSprite.src = `/static/images/${charData.idle}`;
-            OS.isBusy = false;
-            return;
-          }
-
-          setTimeout(() => {
-            UI.updateDisplay(data);
-
-            if (data.message)   UI.log(data.message, "green");
-            if (data.capped)    UI.log(`ULTIMATE CAPPED — max single-hit threshold reached`, "cyan");
-            if (data.enemy_msg) {
-              UI.log(data.enemy_msg, "red");
-              if (!data.game_over && charData.hurt) {
-                pSprite.src = `/static/images/${charData.hurt}`;
-                pSprite.style.transform = '';
-                pSprite.classList.add("anim-p-hurt");
-                setTimeout(() => {
-                  pSprite.classList.remove("anim-p-hurt");
-                  if (!data.game_over)
-                    pSprite.src = `/static/images/${charData.idle}`;
-                }, 440);
-              }
-            }
-
-            if (data.zenkai) {
-              UI.log("ZENKAI BOOST ACTIVATED — POWER SURGING!", "gold");
-              const frame = document.getElementById("interface-main");
-              frame.classList.add("anim-zenkai");
-              setTimeout(() => frame.classList.remove("anim-zenkai"), 2200);
-            }
-
-            if (data.game_over) {
-              setTimeout(() => document.getElementById("screen-defeat").classList.remove("hidden"), 650);
-              return;
-            }
-
-            if (data.enemy_killed) {
-              UI.log(`${OS.lastEnemy?.name || "ENEMY"} DEFEATED — UPLOADING SALVAGE DATA`, "gold");
-              if (data.pl_gained && data.pl_gained > 0)
-                UI.log(`POWER LEVEL +${data.pl_gained.toLocaleString()} absorbed`, "cyan");
-              eSprite.classList.add("anim-e-hit");
-              setTimeout(() => eSprite.classList.remove("anim-e-hit"), 400);
-              OS.handleVictory(data);
-            } else {
-              eSprite.classList.add("anim-e-hit");
-              setTimeout(() => eSprite.classList.remove("anim-e-hit"), 400);
-              OS.isBusy = false;
-            }
-          }, 500);
-
-          setTimeout(() => {
-            if (!data.game_over && !data.enemy_msg) {
-              pSprite.src = `/static/images/${charData.idle}`;
-              pSprite.style.transform = '';
-            }
-          }, 900);
-
-        } catch (err) {
-          UI.log("CRITICAL ERROR — DATA LINK SEVERED", "red");
-          OS.isBusy = false;
-        }
-      },
-
-      handleVictory(data) {
-        UI.log("HOSTILE NEUTRALIZED — REDIRECTING TO SALVAGE DEPOT", "gold");
-        setTimeout(() => {
-          const wv = data.player?.wave ?? 1;
-          document.getElementById("shop-sub-lbl").innerText =
-            `SECTOR ${String(wv).padStart(2,"0")} CLEAR — SELECT UPGRADES BEFORE ADVANCING`;
-
-          const rerollCost = 300 + wv * 25;
-          document.getElementById("reroll-cost-lbl").innerText = `[${rerollCost} Z]`;
-
-          const mount = document.getElementById("shop-mount");
-          const items = data.shop_items || [];
-          OS._renderShopItems(mount, items);
-
-          document.getElementById("screen-shop").classList.remove("hidden");
-        }, 1200);
-      },
-
-      _renderShopItems(mount, items) {
-        mount.innerHTML = items.map(it => `
-          <div class="shop-card">
-            <div class="shop-item-name">${it.name}</div>
-            <div class="shop-item-desc">${it.desc}</div>
-            <button
-              class="btn btn-gold"
-              style="width:100%;margin-top:auto;"
-              onclick="OS.buyItem('${it.id}', this)"
-            >${it.cost} Z</button>
-          </div>
-        `).join("");
-      },
-
-      async refreshShop() {
-        const res  = await fetch("/refresh-shop", { method: "POST", credentials: "include" });
-        const data = await res.json();
-        if (!res.ok) {
-          UI.log(data.error || "REROLL BLOCKED — INSUFFICIENT ZENI", "red");
-          return;
-        }
-        OS._renderShopItems(document.getElementById("shop-mount"), data.shop_items || []);
-        UI.updateDisplay({ player: data.player, enemy: OS.lastEnemy });
-        UI.log("SHOP REFRESHED — NEW SALVAGE AVAILABLE", "cyan");
-      },
-
-      async buyItem(id, btn) {
-        const res = await fetch("/purchase", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ item_id: id }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          UI.log(data.error || "PURCHASE BLOCKED", "red");
-          return;
-        }
-        if (data.player) {
-          UI.updateDisplay({ player: data.player, enemy: OS.lastEnemy });
-          btn.innerText = "INSTALLED";
-          btn.disabled  = true;
-          const label = id.toUpperCase().replace(/_/g, " ");
-          const detail = data.detail ? ` — ${data.detail}` : "";
-          UI.log(`UPGRADE INSTALLED: ${label}${detail}`, "cyan");
-        }
-      },
-
-      async nextWave() {
-        const res  = await fetch("/next-enemy", { method: "POST", credentials: "include" });
-        const data = await res.json();
-        document.getElementById("screen-shop").classList.add("hidden");
-        UI.updateDisplay(data);
-
-        const charData = ASSETS[OS.char] || ASSETS.goku;
-        document.getElementById("p-sprite").src = `/static/images/${charData.idle}`;
-        document.getElementById("p-sprite").style.transform = '';
-        OS.isBusy = false;
-
-        const sector = String(data.player.wave).padStart(2, "0");
-        const saga   = UI.getSaga(data.player.wave);
-        UI.log(`ENTERING SECTOR ${sector} · ${saga} SAGA`, "gold");
-        UI.log(
-          `THREAT: ${data.enemy.name}` +
-          (data.enemy.modifier ? ` [${data.enemy.modifier}]` : "") +
-          (data.enemy.boss ? " — BOSS ENCOUNTER" : ""),
-          "red"
-        );
-      },
-
-      async showStatus() {
-        const res = await fetch("/battle-status", { credentials: "include" });
-        if (!res.ok) { UI.log("STATUS FETCH FAILED", "red"); return; }
-
-        const { player: p } = await res.json();
-        const pct = v => `${Math.round((v || 0) * 100)}%`;
-
-        const rows = [
-          ["PILOT",        (p.char || "?").toUpperCase()],
-          ["SECTOR",       String(p.wave || 1).padStart(2, "0")],
-          ["SAGA",         `${p.saga || UI.getSaga(p.wave || 1)} SAGA`],
-          ["ZENI",         `${p.zeni || 0} Z`],
-          ["HP",           `${Math.round(p.hp)} / ${p.max_hp}`],
-          ["KI",           `${Math.round(p.ki || 0)}%`],
-          ["KI REGEN",     `+${p.ki_regen || 8} / turn`],
-          ["POWER LEVEL",  (p.pl || 0).toLocaleString()],
-          ["CRIT CHANCE",  pct(p.crit_chance)],
-          ["DODGE",        pct(p.dodge_chance)],
-          ["DEF PEN",      pct(p.def_pen)],
-          ["LIFESTEAL",    pct(p.lifesteal)],
-          ["FLAT REDUCE",  String(p.flat_reduction || 0)],
-          ["DMG MULT",     `x${(p.outgoing_damage_mult || 1).toFixed(2)}`],
-          ["ZENKAI LV",    String(p.zenkai_level || 0)],
-        ];
-
-        // Build active buff list with descriptions
-        const activeMods = [];
-        if ((p.ki_gain_mult || 1) > 1)
-          activeMods.push(["KI OVERDRIVE",   "All Ki gains doubled each turn."]);
-        if ((p.adrenaline_scale || 0) > 0)
-          activeMods.push(["SAIYAN PRIDE",   "Damage scales up the lower your HP falls."]);
-        if ((p.outgoing_damage_mult || 1) > 1)
-          activeMods.push(["FRUIT OF MIGHT", `All damage x${(p.outgoing_damage_mult || 1).toFixed(2)}.`]);
-        if ((p.lifesteal || 0) > 0)
-          activeMods.push(["ANCIENT OINTMENT", `${Math.round(p.lifesteal * 100)}% of all damage dealt is healed.`]);
-        if ((p.flat_reduction || 0) > 0)
-          activeMods.push(["KATCHIN ARMOR",  `Every hit taken is reduced by ${p.flat_reduction} flat.`]);
-        if ((p.crit_chance || 0.05) > 0.05)
-          activeMods.push(["SCOUTER MOD",    `${Math.round(p.crit_chance * 100)}% Crit Chance — crits deal 1.6× damage.`]);
-        if ((p.dodge_chance || 0.03) > 0.03)
-          activeMods.push(["EVASION MOD",    `${Math.round(p.dodge_chance * 100)}% chance to fully dodge enemy attacks.`]);
-        if ((p.def_pen || 0) > 0)
-          activeMods.push(["DEF PENETRATION", `${Math.round(p.def_pen * 100)}% of enemy armor bypassed.`]);
-
-        const modsHtml = activeMods.length
-          ? `<div style="margin-top:18px;">
-               <div style="font-family:'Share Tech Mono',monospace;font-size:0.52rem;letter-spacing:4px;color:rgba(252,194,3,0.6);border-bottom:1px solid rgba(252,194,3,0.15);padding-bottom:4px;margin-bottom:8px;">ACTIVE AUGMENTS</div>
-               ${activeMods.map(([name, desc]) => `
-                 <div style="display:flex;gap:12px;border-bottom:1px solid rgba(252,194,3,0.08);padding:5px 0;">
-                   <span style="font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--gold);min-width:180px;">${name}</span>
-                   <span style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:rgba(255,255,255,0.45);">${desc}</span>
-                 </div>`).join("")}
-             </div>`
-          : `<div class="stat-mods-box" style="opacity:0.4;">NO AUGMENTS ACTIVE</div>`;
-
-        document.getElementById("status-content").innerHTML =
-          rows.map(([k, v]) =>
-            `<div class="stat-row">
-               <span class="stat-row-lbl">${k}</span>
-               <span class="stat-row-val">${v}</span>
-             </div>`
-          ).join("") + modsHtml;
-
-        document.getElementById("screen-status").classList.remove("hidden");
-      },
-
-      async selectWarrior(id) {
-        const res = await fetch("/select-char", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ character: id }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          UI.log(data.error || "LINK NEGOTIATION FAILED", "red");
-          return;
-        }
-        OS.char     = id;
-        OS.jabIndex = 0;
-        OS.refreshSkillLabels();
-
-        document.getElementById("screen-start").classList.add("hidden");
-        document.getElementById("interface-main").classList.remove("hidden");
-
-        const charData = ASSETS[id] || ASSETS.goku;
-        document.getElementById("p-sprite").src = `/static/images/${charData.idle}`;
-
-        UI.updateDisplay(data);
-        UI.log(`TACTICAL UPLINK ESTABLISHED — ${id.toUpperCase()} ONLINE`, "green");
-        UI.log(`SECTOR 01 · SAIYAN SAGA — THREAT INCOMING`, "cyan");
-        if (data.enemy) {
-          UI.log(
-            `THREAT: ${data.enemy.name}` +
-            (data.enemy.modifier ? ` [${data.enemy.modifier}]` : "") +
-            (data.enemy.boss ? " — BOSS ENCOUNTER" : ""),
-            "red"
-          );
-        }
-      },
-
-      rebootFromDefeat() {
-        window.location.reload();
-      },
-
-      async boot() {
-        const res = await fetch("/get-roster", { credentials: "include" });
-        if (!res.ok) return;
-
-        const { roster, zenkai } = await res.json();
-        document.getElementById("zenkai-line").innerText =
-          `ZENKAI BOOST: LV.${zenkai}` +
-          (zenkai > 0 ? " · PERMANENT STAT BONUS ACTIVE" : " · NEAR-DEATH VICTORY TRIGGERS ZENKAI");
-
-        const zWarriors = roster.filter(c => c.category === "Z-WARRIORS");
-        const rivals    = roster.filter(c => c.category === "RIVALS");
-
-        const makeCard = c => {
-          const portraitSrc = ASSETS[c.id]?.idle;
-          const portrait    = portraitSrc
-            ? `<img src="/static/images/${portraitSrc}" class="card-portrait" alt="${c.id}">`
-            : `<div class="card-portrait-ph">?</div>`;
+        const row = document.createElement("div");
+        row.className = "char-row";
+        for (const c of chars) {
+          const card = document.createElement("div");
+          card.className = "char-card" + (c.unlocked ? "" : " locked");
+          card.dataset.id = c.id;
 
           if (!c.sprite_ready) {
-            return `<div class="char-card soon">
-              ${portrait}
-              <div class="card-name">${c.id.toUpperCase()}</div>
-              <div class="card-pl">PL: ${c.base_pl.toLocaleString()}</div>
-              <div class="card-badge grey">COMING SOON</div>
-            </div>`;
+            card.innerHTML = `
+              <div class="coming-soon">
+                <div style="font-size:16px;margin-bottom:4px">⬜</div>
+                <div>IN PROGRESS</div>
+              </div>
+              <div class="card-name">${c.name}<div class="card-pl">PL ${UI.fmt(c.base_pl)}</div></div>
+              ${!c.unlocked && c.unlock_by ? `<div class="card-lock">BEAT ${c.unlock_by}</div>` : ""}
+            `;
+            if (!c.unlocked && c.unlock_by) {
+              card.style.cursor = "default";
+            }
+          } else if (!c.unlocked) {
+            card.innerHTML = `
+              <div class="coming-soon">
+                <div style="font-size:22px;margin-bottom:4px">🔒</div>
+                <div>LOCKED</div>
+              </div>
+              <div class="card-name">${c.name}<div class="card-pl">PL ${UI.fmt(c.base_pl)}</div></div>
+              ${c.unlock_by ? `<div class="card-lock">BEAT ${c.unlock_by}</div>` : ""}
+            `;
+          } else {
+            card.innerHTML = `
+              <div class="card-name">${c.name}<div class="card-pl">PL ${UI.fmt(c.base_pl)}</div></div>
+            `;
+            card.addEventListener("click", () => OS.selectChar(c.id));
           }
-          if (!c.unlocked) {
-            return `<div class="char-card locked">
-              ${portrait}
-              <div class="card-name">${c.id.toUpperCase()}</div>
-              <div class="card-pl">PL: ${c.base_pl.toLocaleString()}</div>
-              <div class="card-badge red">BEAT ${c.unlock_by}</div>
-            </div>`;
-          }
-          return `<div class="char-card selectable" onclick="OS.selectWarrior('${c.id}')">
-            ${portrait}
-            <div class="card-name">${c.id.toUpperCase()}</div>
-            <div class="card-pl">PL: ${c.base_pl.toLocaleString()}</div>
-            <button class="btn card-select-btn">SELECT</button>
-          </div>`;
-        };
-
-        const section = (label, chars) => `
-          <div class="roster-section-label">— ${label} —</div>
-          <div class="roster-row">${chars.map(makeCard).join("")}</div>
-        `;
-
-        document.getElementById("roster-mount").innerHTML =
-          section("Z-WARRIORS", zWarriors) +
-          section("RIVALS UNLOCKED IN COMBAT", rivals);
-      },
-    };
-
-    document.addEventListener("keydown", e => {
-      const statusOpen = !document.getElementById("screen-status").classList.contains("hidden");
-      const shopOpen   = !document.getElementById("screen-shop").classList.contains("hidden");
-      const mainActive = !document.getElementById("interface-main").classList.contains("hidden");
-
-      if (statusOpen) {
-        if (e.key === "Escape") { e.preventDefault(); document.getElementById("screen-status").classList.add("hidden"); }
-        return;
+          row.appendChild(card);
+        }
+        sagaDiv.appendChild(row);
       }
-      if (shopOpen) {
-        if (e.key === "Enter") { e.preventDefault(); OS.nextWave(); }
-        return;
-      }
-      if (!mainActive) return;
+      scroll.appendChild(sagaDiv);
+    }
+  },
 
-      switch (e.key) {
-        case "a": case "A": e.preventDefault(); OS.triggerAction("jab"); break;
-        case "s": case "S": e.preventDefault(); UI.toggleSkills(); break;
-        case "d": case "D": e.preventDefault(); OS.triggerAction("guard"); break;
-        case "Tab":         e.preventDefault(); OS.showStatus(); break;
-        case "1":           e.preventDefault(); OS.triggerSlotSkill("heavy"); break;
-        case "2":           e.preventDefault(); OS.triggerSlotSkill("beam"); break;
-        case "3":           e.preventDefault(); OS.triggerSlotSkill("ult"); break;
-        case "Escape":      e.preventDefault(); UI.closeSkills(); break;
-      }
+  async selectChar(id) {
+    const res = await fetch("/select-char", {
+      method:"POST", credentials:"include",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({character: id}),
     });
+    if (!res.ok) return;
+    const data = await res.json();
+    OS.char = id;
+    OS.lastPlayer = data.player;
+    OS.lastEnemy  = data.enemy;
+    UI.hide("screen-roster"); UI.show("screen-game");
+    OS.buildSkillButtons();
+    UI.updateDisplay({player: data.player, enemy: data.enemy});
+    UI.log(`FIGHTER SELECTED: ${(data.player.char || id).toUpperCase()}`, "gold");
+    UI.log(`POWER LEVEL: ${UI.fmt(data.player.pl)}`, "green");
+  },
 
-    OS.boot();
-  </script>
+  buildSkillButtons() {
+    const skills = SKILL_LAYOUT[OS.char] || SKILL_LAYOUT["goku"];
+    const menu = document.getElementById("specials-menu");
+    menu.innerHTML = "";
+    // slot 0 is "jab" (handled by main button)
+    for (let i = 1; i < skills.length; i++) {
+      const sk = skills[i];
+      const btn = document.createElement("button");
+      btn.className = "btn";
+      btn.id = `skill-btn-${sk}`;
+      btn.innerHTML = `${SKILL_NAMES[sk] || sk.toUpperCase()} <span class="key-hint">[${i + 1}]</span>`;
+      btn.addEventListener("click", () => { OS.closeMenus(); OS.act(sk); });
+      menu.appendChild(btn);
+    }
+    // Show/hide transform button based on character
+    const hasTransforms = !!CHAR_TRANSFORMS_UI[OS.char];
+    document.getElementById("btn-transform-open").style.display =
+      hasTransforms ? "" : "none";
+  },
+
+  toggleMenu(menuId) {
+    if (OS.activeMenuId && OS.activeMenuId !== menuId) {
+      document.getElementById(OS.activeMenuId).classList.remove("open");
+    }
+    const menu = document.getElementById(menuId);
+    menu.classList.toggle("open");
+    OS.activeMenuId = menu.classList.contains("open") ? menuId : null;
+  },
+
+  closeMenus() {
+    if (OS.activeMenuId) {
+      document.getElementById(OS.activeMenuId).classList.remove("open");
+      OS.activeMenuId = null;
+    }
+  },
+
+  // ── Transform screen ──────────────────────────────────────────────────
+  openTransformScreen() {
+    if (OS.isBusy) return;
+    OS.closeMenus();
+    const p = OS.lastPlayer;
+    const transforms = CHAR_TRANSFORMS_UI[OS.char] || [];
+
+    UI.setText("transform-char-lbl",
+      `${(OS.char).toUpperCase().replace("_"," ")} — SELECT FORM`);
+
+    const grid = document.getElementById("transform-grid");
+    grid.innerHTML = "";
+    for (const t of transforms) {
+      const unlocked = OS._transformUnlocked(t, p);
+      const isActive = p && p.active_transform === t.id;
+      const card = document.createElement("div");
+      card.className = "transform-card" +
+        (isActive     ? " active-form"  : "") +
+        (!unlocked    ? " locked-form"  : "");
+      card.innerHTML = `
+        <div>
+          <div class="tc-label">${t.label}</div>
+          <div class="tc-mult">${t.mult}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="tc-drain">${t.drain}</div>
+          ${!unlocked ? `<div class="tc-lock">${t.req === "kaioken" ? "DEFEAT NAPPA" : "DEFEAT FRIEZA 50%"}</div>` : ""}
+        </div>
+      `;
+      if (unlocked) {
+        card.addEventListener("click", () => OS.activateTransform(t.id));
+      }
+      grid.appendChild(card);
+    }
+    // Hide revert if no active transform
+    document.getElementById("transform-revert").style.display =
+      (p && p.active_transform) ? "" : "none";
+
+    UI.show("screen-transform");
+  },
+
+  _transformUnlocked(t, p) {
+    if (!p) return false;
+    if (t.req === "kaioken") return !!p.kaioken_unlocked;
+    if (t.req === "ssj")     return !!p.ssj_unlocked;
+    return true;
+  },
+
+  closeTransformScreen() {
+    UI.hide("screen-transform");
+  },
+
+  async activateTransform(mode) {
+    UI.hide("screen-transform");
+    const res = await fetch("/transform", {
+      method:"POST", credentials:"include",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({mode}),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      UI.log(data.error || "TRANSFORM FAILED", "red");
+      return;
+    }
+    UI.updateDisplay({player: data.player, enemy: OS.lastEnemy});
+    if (mode === "none") {
+      UI.log("TRANSFORMATION RELEASED", "dim");
+    } else {
+      UI.log(data.message || `${mode.toUpperCase()} ACTIVE`, "gold");
+    }
+  },
+
+  // ── Combat ────────────────────────────────────────────────────────────
+  async act(skill) {
+    if (OS.isBusy) return;
+    OS.isBusy = true;
+    OS.closeMenus();
+    OS.setBusy(true);
+
+    const res = await fetch("/battle-action", {
+      method:"POST", credentials:"include",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({skill}),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      UI.log(data.error || "ACTION FAILED", "red");
+      OS.isBusy = false; OS.setBusy(false); return;
+    }
+
+    OS.lastEnemy = data.enemy;
+
+    // ── Transform drain message (show immediately) ───────────────────
+    if (data.transform_msg) {
+      const color = data.transform_msg.includes("DROPPED") ? "red" :
+                    data.transform_msg.includes("burned") ? "blue" : "gold";
+      UI.log(data.transform_msg, color);
+    }
+
+    // ── Play player attack animation, then show messages after 500ms ──
+    const pSprite = document.getElementById("p-sprite");
+    const eSprite = document.getElementById("e-sprite");
+    const charData = ASSETS[OS.char] || ASSETS["goku"];
+    const seq      = (ANIM_SEQUENCES[OS.char] || {})[skill] || null;
+
+    if (seq) {
+      await OS._runSequence(pSprite, seq);
+    } else {
+      pSprite.src = `/static/images/${(charData.attack||[charData.idle])[0]}`;
+      await new Promise(r => setTimeout(r, 300));
+      pSprite.src = `/static/images/${charData.idle}`;
+    }
+
+    // 500ms pause before showing result + enemy counter
+    await new Promise(r => setTimeout(r, 500));
+
+    // Show player attack result
+    if (data.message) UI.log(data.message, "green");
+
+    // Animate enemy being hit
+    eSprite.classList.add("anim-e-hit");
+    setTimeout(() => eSprite.classList.remove("anim-e-hit"), 400);
+
+    // PL absorption on kill
+    if (data.pl_gained > 0) {
+      UI.log(`POWER LEVEL +${UI.fmt(data.pl_gained)} absorbed`, "gold");
+    }
+    if (data.capped) {
+      UI.log("ULTIMATE CAPPED — max single-hit threshold reached", "dim");
+    }
+
+    // Update display (enemy HP bar updates here)
+    UI.updateDisplay({player: data.player, enemy: data.enemy});
+
+    if (data.enemy_killed) {
+      await new Promise(r => setTimeout(r, 400));
+      if (data.zenkai) {
+        UI.log("⚡ ZENKAI BOOST TRIGGERED — power surging!", "purple");
+      }
+      OS.handleVictory(data);
+      return;
+    }
+
+    // ── Enemy counter-attack (500ms AFTER player result) ──────────────
+    if (data.enemy_msg) {
+      await new Promise(r => setTimeout(r, 500));
+      UI.log(data.enemy_msg, "red");
+
+      if (data.game_over) {
+        // Show dying animation then defeat screen
+        pSprite.src = `/static/images/${charData.fainted || "goku_fainted-removebg-preview.png"}`;
+        pSprite.style.transform = "";
+        pSprite.classList.remove("kaioken","ssj");
+        await new Promise(r => setTimeout(r, 1600));
+        OS.showDefeat(data.player);
+        return;
+      }
+
+      // Show hurt animation
+      pSprite.src = `/static/images/${charData.hurt || charData.idle}`;
+      pSprite.classList.add("anim-p-hurt");
+      setTimeout(() => {
+        pSprite.classList.remove("anim-p-hurt");
+        pSprite.src = `/static/images/${charData.idle}`;
+      }, 440);
+    }
+
+    OS.isBusy = false;
+    OS.setBusy(false);
+  },
+
+  async _runSequence(spriteEl, seq) {
+    for (const frame of seq) {
+      spriteEl.src = `/static/images/${frame.sprite}`;
+      if (frame.scale) {
+        spriteEl.style.transform = `scale(${frame.scale})`;
+      } else {
+        spriteEl.style.transform = "";
+      }
+      await new Promise(r => setTimeout(r, frame.delay || 300));
+    }
+    spriteEl.style.transform = "";
+  },
+
+  setBusy(busy) {
+    document.getElementById("btn-jab").disabled    = busy;
+    document.getElementById("btn-specials").disabled= busy;
+    document.getElementById("btn-guard").disabled  = busy;
+  },
+
+  // ── Victory / Shop ────────────────────────────────────────────────────
+  handleVictory(data) {
+    UI.log(`${data.enemy.name} DEFEATED!`, "gold");
+    UI.setText("shop-wave", `WAVE ${data.player.wave} CLEARED`);
+
+    const rerollCost = 300 + data.player.wave * 25;
+    document.getElementById("reroll-cost-lbl").textContent =
+      `[${UI.fmt(rerollCost)} Z]`;
+    UI.setText("shop-zeni-lbl", `⊛ ${UI.fmt(data.player.zeni)}`);
+
+    const grid = document.getElementById("shop-grid");
+    grid.innerHTML = "";
+    for (const item of data.shop_items) {
+      const card = document.createElement("div");
+      card.className = "shop-card";
+      card.innerHTML = `
+        <div class="shop-name">${item.name}</div>
+        <div class="shop-desc">${item.desc}</div>
+        <div class="shop-cost">⊛ ${UI.fmt(item.cost)}</div>
+      `;
+      card.addEventListener("click", () => OS.buyItem(item.id));
+      grid.appendChild(card);
+    }
+    UI.show("screen-shop");
+    OS.isBusy = false;
+    OS.setBusy(false);
+  },
+
+  async buyItem(itemId) {
+    const res = await fetch("/purchase", {
+      method:"POST", credentials:"include",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({item_id: itemId}),
+    });
+    const data = await res.json();
+    if (!res.ok) { UI.log(data.error || "PURCHASE FAILED", "red"); return; }
+    OS.lastPlayer = data.player;
+    UI.setText("shop-zeni-lbl", `⊛ ${UI.fmt(data.player.zeni)}`);
+    const rerollCost = 300 + data.player.wave * 25;
+    document.getElementById("reroll-cost-lbl").textContent =
+      `[${UI.fmt(rerollCost)} Z]`;
+    UI.log(`PURCHASED — ${data.detail}`, "gold");
+  },
+
+  async refreshShop() {
+    const res = await fetch("/refresh-shop", {
+      method:"POST", credentials:"include",
+      headers:{"Content-Type":"application/json"},
+    });
+    const data = await res.json();
+    if (!res.ok) { UI.log(data.error || "REROLL FAILED", "red"); return; }
+    OS.lastPlayer = data.player;
+    UI.setText("shop-zeni-lbl", `⊛ ${UI.fmt(data.player.zeni)}`);
+    const rerollCost = 300 + data.player.wave * 25;
+    document.getElementById("reroll-cost-lbl").textContent =
+      `[${UI.fmt(rerollCost)} Z]`;
+    const grid = document.getElementById("shop-grid");
+    grid.innerHTML = "";
+    for (const item of data.shop_items) {
+      const card = document.createElement("div");
+      card.className = "shop-card";
+      card.innerHTML = `
+        <div class="shop-name">${item.name}</div>
+        <div class="shop-desc">${item.desc}</div>
+        <div class="shop-cost">⊛ ${UI.fmt(item.cost)}</div>
+      `;
+      card.addEventListener("click", () => OS.buyItem(item.id));
+      grid.appendChild(card);
+    }
+    UI.log("SHOP REROLLED", "dim");
+  },
+
+  async closeShop() {
+    UI.hide("screen-shop");
+    const res = await fetch("/next-enemy", {
+      method:"POST", credentials:"include",
+      headers:{"Content-Type":"application/json"},
+    });
+    const data = await res.json();
+    OS.lastEnemy = data.enemy;
+    UI.updateDisplay({player: data.player, enemy: data.enemy});
+    const charData = ASSETS[OS.char] || ASSETS["goku"];
+    document.getElementById("p-sprite").src =
+      `/static/images/${charData.idle}`;
+    UI.log(`— WAVE ${data.player.wave} — ${data.enemy.name} appears!`, "dim");
+    if (data.enemy.modifier) {
+      UI.log(`MODIFIER: ${data.enemy.modifier}`, "gold");
+    }
+    if (data.enemy.boss) {
+      UI.log(`⚠ BOSS ENCOUNTER: ${data.enemy.name}`, "red");
+    }
+  },
+
+  // ── Status screen ─────────────────────────────────────────────────────
+  showStatus() {
+    OS.closeMenus();
+    const p = OS.lastPlayer;
+    if (!p) return;
+    const body = document.getElementById("status-body");
+    body.innerHTML = "";
+
+    const col1 = document.createElement("div"); col1.className = "status-col";
+    const col2 = document.createElement("div"); col2.className = "status-col";
+
+    // Stats
+    const statsHtml = `
+      <div class="status-section">
+        <div class="status-section-title">COMBAT STATS</div>
+        <div class="status-stat">POWER LEVEL <span>${UI.fmt(p.pl)}</span></div>
+        <div class="status-stat">MAX HP <span>${UI.fmt(p.max_hp)}</span></div>
+        <div class="status-stat">CRIT CHANCE <span>${Math.round(p.crit_chance*100)}%</span></div>
+        <div class="status-stat">DODGE CHANCE <span>${Math.round(p.dodge_chance*100)}%</span></div>
+        <div class="status-stat">LIFESTEAL <span>${Math.round(p.lifesteal*100)}%</span></div>
+        <div class="status-stat">FLAT REDUCTION <span>${p.flat_reduction}</span></div>
+        <div class="status-stat">DEF PEN <span>${Math.round(p.def_pen*100)}%</span></div>
+        <div class="status-stat">DMG MULT <span>×${p.outgoing_damage_mult.toFixed(2)}</span></div>
+        <div class="status-stat">KI REGEN <span>+${p.ki_regen}/turn</span></div>
+      </div>`;
+    col1.innerHTML = statsHtml;
+
+    // Transform
+    let transformHtml = `<div class="status-section">
+      <div class="status-section-title">TRANSFORMATIONS</div>`;
+    if (p.active_transform) {
+      const tList = CHAR_TRANSFORMS_UI[OS.char] || [];
+      const tData = tList.find(t => t.id === p.active_transform);
+      transformHtml += `
+        <div class="status-stat">ACTIVE FORM <span style="color:var(--gold)">${tData ? tData.label : p.active_transform}</span></div>
+        <div class="status-stat">PL MULTIPLIER <span>${tData ? tData.mult : "—"}</span></div>
+        <div class="status-stat">DRAIN <span style="color:var(--red)">${tData ? tData.drain : "—"}</span></div>`;
+    } else {
+      transformHtml += `<div class="status-stat">ACTIVE FORM <span>BASE</span></div>`;
+    }
+    if (OS.char === "goku") {
+      transformHtml += `<div class="status-stat" style="margin-top:4px">KAIOKEN <span>${p.kaioken_unlocked ? "UNLOCKED" : "LOCKED"}</span></div>`;
+    }
+    if (OS.char === "goku_namek") {
+      transformHtml += `<div class="status-stat" style="margin-top:4px">SUPER SAIYAN <span>${p.ssj_unlocked ? "UNLOCKED" : "LOCKED"}</span></div>`;
+    }
+    transformHtml += "</div>";
+    col1.innerHTML += transformHtml;
+
+    // Augments
+    let augHtml = `<div class="status-section"><div class="status-section-title">ACTIVE AUGMENTS</div>`;
+    const augEntries = [];
+    if (p.crit_chance  > 0.05)          augEntries.push({n:"Prototype Scouter",  d:BUFF_DESCRIPTIONS.scouter_v3});
+    if (p.ki_gain_mult > 1.0)           augEntries.push({n:"Ki Overdrive",        d:BUFF_DESCRIPTIONS.ki_overdrive});
+    if (p.outgoing_damage_mult > 1.0)   augEntries.push({n:"Fruit of Might",      d:BUFF_DESCRIPTIONS.fruit_tree});
+    if (p.lifesteal > 0)                augEntries.push({n:"Ancient Ointment",    d:`Lifesteal: ${Math.round(p.lifesteal*100)}%`});
+    if (p.flat_reduction > 0)           augEntries.push({n:"Katchin Armor",       d:`Flat reduction: ${p.flat_reduction}`});
+    if (p.adrenaline_scale > 0)         augEntries.push({n:"Saiyan Pride",        d:BUFF_DESCRIPTIONS.adrenaline});
+    if (p.dodge_chance > 0.03)          augEntries.push({n:"Dodge Boost",         d:`Dodge: ${Math.round(p.dodge_chance*100)}%`});
+    if (p.def_pen > 0)                  augEntries.push({n:"Z-Sword Fragment",    d:`Def Pen: ${Math.round(p.def_pen*100)}%`});
+    if (p.ki_regen  > 8)               augEntries.push({n:"Yardrat Secret",      d:`Ki Regen: +${p.ki_regen}/turn`});
+    if (!augEntries.length) {
+      augHtml += `<div class="aug-badge">No augments active yet.</div>`;
+    } else {
+      for (const a of augEntries)
+        augHtml += `<div class="aug-badge"><div class="aug-n">${a.n}</div>${a.d}</div>`;
+    }
+    augHtml += "</div>";
+    col2.innerHTML = augHtml;
+
+    body.appendChild(col1); body.appendChild(col2);
+    UI.show("screen-status");
+  },
+
+  closeStatus() { UI.hide("screen-status"); },
+
+  // ── Defeat ────────────────────────────────────────────────────────────
+  showDefeat(p) {
+    UI.setText("defeat-wave", `FELL ON WAVE ${p.wave}`);
+    UI.setText("defeat-pl",   `FINAL POWER LEVEL: ${UI.fmt(p.pl)}`);
+    const fainted = (ASSETS[OS.char] || ASSETS["goku"]).fainted ||
+                    "goku_fainted-removebg-preview.png";
+    document.getElementById("defeat-sprite").src = `/static/images/${fainted}`;
+    UI.show("screen-defeat");
+  },
+
+  returnToRoster() {
+    UI.hide("screen-defeat");
+    OS.isBusy = false;
+    OS.lastPlayer = null;
+    OS.lastEnemy  = null;
+    document.getElementById("log-area").innerHTML = "";
+    UI.show("screen-roster");
+    OS.loadRoster();
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  KEYBOARD BINDINGS
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener("keydown", e => {
+  const key = e.key.toLowerCase();
+
+  // Close screens
+  if (key === "escape") {
+    if (!document.getElementById("screen-status").classList.contains("hidden"))  { OS.closeStatus(); return; }
+    if (!document.getElementById("screen-transform").classList.contains("hidden")){ OS.closeTransformScreen(); return; }
+    if (!document.getElementById("screen-shop").classList.contains("hidden"))    return; // shop close by Enter
+    OS.closeMenus();
+    return;
+  }
+  if (key === "enter") {
+    if (!document.getElementById("screen-shop").classList.contains("hidden"))    { OS.closeShop(); return; }
+    if (!document.getElementById("screen-defeat").classList.contains("hidden"))  { OS.returnToRoster(); return; }
+  }
+
+  // Combat keys (only when game screen is active)
+  if (!document.getElementById("screen-game").classList.contains("hidden") &&
+       document.getElementById("screen-shop").classList.contains("hidden") &&
+       document.getElementById("screen-status").classList.contains("hidden") &&
+       document.getElementById("screen-transform").classList.contains("hidden")) {
+    if (key === "j") { OS.act("jab"); return; }
+    if (key === "g") { OS.act("guard"); return; }
+    if (key === "i") { OS.showStatus(); return; }
+    if (key === "t") { OS.openTransformScreen(); return; }
+    if (key === "s") { OS.toggleMenu("specials-menu"); return; }
+    // Number keys for specials
+    const skills = SKILL_LAYOUT[OS.char] || SKILL_LAYOUT["goku"];
+    const idx = parseInt(key) - 1;
+    if (!isNaN(idx) && idx > 0 && idx < skills.length) {
+      OS.closeMenus(); OS.act(skills[idx]); return;
+    }
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════════════════
+window.addEventListener("DOMContentLoaded", () => OS.boot());
+</script>
 </body>
 </html>

@@ -21,7 +21,7 @@ def init_db():
     c.execute("SELECT COUNT(*) FROM progress")
     if c.fetchone()[0] == 0:
         c.execute("INSERT INTO progress (unlocked_chars, zenkai_level) VALUES (?, ?)",
-                  (json.dumps(["goku"]), 0))
+                  (json.dumps(["goku", "goku_namek"]), 0))
     conn.commit()
     conn.close()
 
@@ -33,9 +33,9 @@ def get_save_data():
         c.execute("SELECT unlocked_chars, zenkai_level FROM progress WHERE id = 1")
         row = c.fetchone()
         conn.close()
-        return (json.loads(row[0]), row[1]) if row else (["goku"], 0)
+        return (json.loads(row[0]), row[1]) if row else (["goku", "goku_namek"], 0)
     except (sqlite3.Error, json.JSONDecodeError, TypeError, ValueError):
-        return (["goku"], 0)
+        return (["goku", "goku_namek"], 0)
 
 
 def save_unlock(char_id):
@@ -60,19 +60,53 @@ def save_zenkai(level):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  TRANSFORMATION DATA
+#  Per-character transform table: mult, HP drain %/turn, Ki drain/turn, def penalty
+# ─────────────────────────────────────────────────────────────────────────────
+
+CHAR_TRANSFORMS = {
+    "goku": {
+        "kaioken_x2": {"mult": 2.0,  "hp_drain": 0.050, "ki_drain": 0.0,  "def_pen": 1.10, "req": "kaioken", "label": "KAIOKEN x2"},
+        "kaioken_x3": {"mult": 3.0,  "hp_drain": 0.075, "ki_drain": 0.0,  "def_pen": 1.15, "req": "kaioken", "label": "KAIOKEN x3"},
+        "kaioken_x4": {"mult": 4.0,  "hp_drain": 0.100, "ki_drain": 0.0,  "def_pen": 1.20, "req": "kaioken", "label": "KAIOKEN x4"},
+    },
+    "goku_namek": {
+        "kaioken_x2":   {"mult": 2.0,  "hp_drain": 0.020, "ki_drain": 0.0,  "def_pen": 1.10, "req": None,      "label": "KAIOKEN x2"},
+        "kaioken_x5":   {"mult": 5.0,  "hp_drain": 0.050, "ki_drain": 0.0,  "def_pen": 1.20, "req": None,      "label": "KAIOKEN x5"},
+        "kaioken_x10":  {"mult": 10.0, "hp_drain": 0.075, "ki_drain": 0.0,  "def_pen": 1.30, "req": None,      "label": "KAIOKEN x10"},
+        "kaioken_x20":  {"mult": 20.0, "hp_drain": 0.100, "ki_drain": 0.0,  "def_pen": 1.40, "req": None,      "label": "KAIOKEN x20"},
+        "super_saiyan": {"mult": 50.0, "hp_drain": 0.000, "ki_drain": 15.0, "def_pen": 1.00, "req": "ssj",     "label": "SUPER SAIYAN"},
+    },
+}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  STATIC GAME DATA
 # ─────────────────────────────────────────────────────────────────────────────
 
 CHAR_ROSTER = {
-    "goku":     {"base_pl": 415,   "base_hp": 800,  "sprite_set": True,  "unlock_by": None,     "category": "Z-WARRIORS"},
-    "tien":     {"base_pl": 180,   "base_hp": 700,  "sprite_set": False, "unlock_by": None,     "category": "Z-WARRIORS"},
-    "yamcha":   {"base_pl": 120,   "base_hp": 650,  "sprite_set": False, "unlock_by": None,     "category": "Z-WARRIORS"},
-    "piccolo":  {"base_pl": 320,   "base_hp": 750,  "sprite_set": False, "unlock_by": None,     "category": "Z-WARRIORS"},
-    "krillin":  {"base_pl": 210,   "base_hp": 700,  "sprite_set": False, "unlock_by": None,     "category": "Z-WARRIORS"},
-    "chiaotzu": {"base_pl": 90,    "base_hp": 500,  "sprite_set": False, "unlock_by": None,     "category": "Z-WARRIORS"},
-    "raditz":   {"base_pl": 1200,  "base_hp": 1500, "sprite_set": True,  "unlock_by": "RADITZ", "category": "RIVALS"},
-    "nappa":    {"base_pl": 4000,  "base_hp": 3500, "sprite_set": True,  "unlock_by": "NAPPA",  "category": "RIVALS"},
-    "vegeta":   {"base_pl": 18000, "base_hp": 5000, "sprite_set": True,  "unlock_by": "VEGETA", "category": "RIVALS"},
+    # ── SAIYAN SAGA Z-WARRIORS ──────────────────────────────────────────────
+    "goku":       {"name": "GOKU · SAIYAN", "base_pl": 416,     "base_hp": 800,   "sprite_set": True,  "unlock_by": None,          "category": "Z-WARRIORS", "saga": "SAIYAN"},
+    "tien":       {"name": "TIEN",          "base_pl": 180,     "base_hp": 700,   "sprite_set": False, "unlock_by": None,          "category": "Z-WARRIORS", "saga": "SAIYAN"},
+    "yamcha":     {"name": "YAMCHA",        "base_pl": 120,     "base_hp": 650,   "sprite_set": False, "unlock_by": None,          "category": "Z-WARRIORS", "saga": "SAIYAN"},
+    "piccolo":    {"name": "PICCOLO",       "base_pl": 320,     "base_hp": 750,   "sprite_set": False, "unlock_by": None,          "category": "Z-WARRIORS", "saga": "SAIYAN"},
+    "krillin":    {"name": "KRILLIN",       "base_pl": 210,     "base_hp": 700,   "sprite_set": False, "unlock_by": None,          "category": "Z-WARRIORS", "saga": "SAIYAN"},
+    "chiaotzu":   {"name": "CHIAOTZU",      "base_pl": 90,      "base_hp": 500,   "sprite_set": False, "unlock_by": None,          "category": "Z-WARRIORS", "saga": "SAIYAN"},
+    # ── SAIYAN SAGA RIVALS ──────────────────────────────────────────────────
+    "raditz":     {"name": "RADITZ",        "base_pl": 1200,    "base_hp": 1500,  "sprite_set": True,  "unlock_by": "RADITZ",      "category": "RIVALS",     "saga": "SAIYAN"},
+    "nappa":      {"name": "NAPPA",         "base_pl": 4000,    "base_hp": 3500,  "sprite_set": True,  "unlock_by": "NAPPA",       "category": "RIVALS",     "saga": "SAIYAN"},
+    "vegeta":     {"name": "VEGETA",        "base_pl": 18000,   "base_hp": 5000,  "sprite_set": True,  "unlock_by": "VEGETA",      "category": "RIVALS",     "saga": "SAIYAN"},
+    # ── NAMEK SAGA Z-WARRIORS ───────────────────────────────────────────────
+    "goku_namek": {"name": "GOKU · NAMEK",  "base_pl": 5000,    "base_hp": 1200,  "sprite_set": True,  "unlock_by": None,          "category": "Z-WARRIORS", "saga": "NAMEK"},
+    # ── NAMEK SAGA RIVALS ───────────────────────────────────────────────────
+    "dodoria":    {"name": "DODORIA",       "base_pl": 22000,   "base_hp": 4000,  "sprite_set": False, "unlock_by": "DODORIA",     "category": "RIVALS",     "saga": "NAMEK"},
+    "zarbon":     {"name": "ZARBON",        "base_pl": 23000,   "base_hp": 4500,  "sprite_set": False, "unlock_by": "ZARBON",      "category": "RIVALS",     "saga": "NAMEK"},
+    "guldo":      {"name": "GULDO",         "base_pl": 11000,   "base_hp": 3000,  "sprite_set": False, "unlock_by": "GULDO",       "category": "RIVALS",     "saga": "NAMEK"},
+    "recoome":    {"name": "RECOOME",       "base_pl": 71000,   "base_hp": 8000,  "sprite_set": False, "unlock_by": "RECOOME",     "category": "RIVALS",     "saga": "NAMEK"},
+    "burter":     {"name": "BURTER",        "base_pl": 67000,   "base_hp": 7000,  "sprite_set": False, "unlock_by": "BURTER",      "category": "RIVALS",     "saga": "NAMEK"},
+    "jeice":      {"name": "JEICE",         "base_pl": 67000,   "base_hp": 7000,  "sprite_set": False, "unlock_by": "JEICE",       "category": "RIVALS",     "saga": "NAMEK"},
+    "ginyu":      {"name": "CAPTAIN GINYU", "base_pl": 120000,  "base_hp": 9000,  "sprite_set": False, "unlock_by": "GINYU",       "category": "RIVALS",     "saga": "NAMEK"},
+    "frieza":     {"name": "FRIEZA",        "base_pl": 6000000, "base_hp": 15000, "sprite_set": False, "unlock_by": "FRIEZA 100%", "category": "RIVALS",     "saga": "NAMEK"},
 }
 
 MOVES = {
@@ -82,7 +116,6 @@ MOVES = {
     "double_sunday":  {"base_dmg": 280, "ki_cost": 30, "ki_gain": 0,  "hp_cap": None},
     "bomber_dx":      {"base_dmg": 340, "ki_cost": 30, "ki_gain": 0,  "hp_cap": None},
     "galick_gun":     {"base_dmg": 360, "ki_cost": 30, "ki_gain": 0,  "hp_cap": None},
-    # Ultimates: high damage but capped so they can't one-shot reliably early game
     "spirit_bomb":    {"base_dmg": 850, "ki_cost": 80, "ki_gain": 0,  "hp_cap": 0.68},
     "saturday_crash": {"base_dmg": 700, "ki_cost": 80, "ki_gain": 0,  "hp_cap": 0.68},
     "mouth_beam":     {"base_dmg": 800, "ki_cost": 80, "ki_gain": 0,  "hp_cap": 0.68},
@@ -92,35 +125,50 @@ MOVES = {
 
 SAGAS = [
     {"name": "SAIYAN",  "start": 1,   "end": 30},
-    {"name": "NAMEK",   "start": 31,  "end": 60},
-    {"name": "FRIEZA",  "start": 61,  "end": 90},
-    {"name": "ANDROID", "start": 91,  "end": 120},
-    {"name": "CELL",    "start": 121, "end": 150},
-    {"name": "BUU",     "start": 151, "end": 999},
+    {"name": "NAMEK",   "start": 31,  "end": 70},
+    {"name": "FRIEZA",  "start": 71,  "end": 100},
+    {"name": "ANDROID", "start": 101, "end": 130},
+    {"name": "CELL",    "start": 131, "end": 160},
+    {"name": "BUU",     "start": 161, "end": 999},
 ]
 
 ENEMY_POOLS = {
     "SAIYAN": {
         "minions": [
-            # hp_scale and pl_scale kept gentle so Sector 1-9 is beatable without upgrades
             {"name": "SAIBAMAN",       "base_hp": 280, "hp_scale": 70,  "base_pl": 900,  "pl_scale": 1.08},
             {"name": "FRIEZA SOLDIER", "base_hp": 300, "hp_scale": 75,  "base_pl": 800,  "pl_scale": 1.06},
         ],
         "bosses": {
-            10: {"name": "RADITZ", "hp": 1800,  "pl": 1200,  "unlock": "raditz"},
-            20: {"name": "NAPPA",  "hp": 5500,  "pl": 3800,  "unlock": "nappa"},
-            30: {"name": "VEGETA", "hp": 22000, "pl": 16000, "unlock": "vegeta"},
+            10: {"name": "RADITZ", "hp": 1800,  "pl": 1200,  "unlock": "raditz", "grants": None},
+            20: {"name": "NAPPA",  "hp": 5500,  "pl": 3800,  "unlock": "nappa",  "grants": "kaioken"},
+            30: {"name": "VEGETA", "hp": 22000, "pl": 16000, "unlock": "vegeta", "grants": None},
         },
     },
     "NAMEK": {
         "minions": [
-            {"name": "NAMEKIAN WARRIOR", "base_hp": 500, "hp_scale": 160, "base_pl": 2800, "pl_scale": 1.12},
-            {"name": "FRIEZA SOLDIER",   "base_hp": 480, "hp_scale": 150, "base_pl": 2600, "pl_scale": 1.10},
+            {"name": "NAMEKIAN WARRIOR", "base_hp": 600, "hp_scale": 200, "base_pl": 5000, "pl_scale": 1.06},
+            {"name": "FRIEZA SOLDIER",   "base_hp": 550, "hp_scale": 180, "base_pl": 4500, "pl_scale": 1.05},
         ],
         "bosses": {
-            40: {"name": "DODORIA", "hp": 12000,  "pl": 22000,  "unlock": None},
-            50: {"name": "ZARBON",  "hp": 20000,  "pl": 23000,  "unlock": None},
-            60: {"name": "FRIEZA",  "hp": 100000, "pl": 530000, "unlock": None},
+            35: {"name": "DODORIA",      "hp": 25000,  "pl": 22000,  "unlock": "dodoria",  "grants": None},
+            40: {"name": "ZARBON",       "hp": 35000,  "pl": 23000,  "unlock": "zarbon",   "grants": None},
+            50: {"name": "GULDO",        "hp": 30000,  "pl": 11000,  "unlock": "guldo",    "grants": None},
+            53: {"name": "RECOOME",      "hp": 80000,  "pl": 71000,  "unlock": "recoome",  "grants": None},
+            55: {"name": "BURTER",       "hp": 65000,  "pl": 67000,  "unlock": "burter",   "grants": None},
+            58: {"name": "JEICE",        "hp": 65000,  "pl": 67000,  "unlock": "jeice",    "grants": None},
+            60: {"name": "GINYU",        "hp": 90000,  "pl": 120000, "unlock": "ginyu",    "grants": None},
+            70: {"name": "FRIEZA FORM 1","hp": 220000, "pl": 180000, "unlock": None,       "grants": None},
+        },
+    },
+    "FRIEZA": {
+        "minions": [
+            {"name": "ELITE SOLDIER", "base_hp": 800, "hp_scale": 200, "base_pl": 60000, "pl_scale": 1.04},
+        ],
+        "bosses": {
+            80:  {"name": "FRIEZA FORM 2", "hp": 380000,  "pl": 500000,   "unlock": None,    "grants": None},
+            90:  {"name": "FRIEZA FORM 3", "hp": 600000,  "pl": 900000,   "unlock": None,    "grants": None},
+            95:  {"name": "FRIEZA 50%",    "hp": 900000,  "pl": 3000000,  "unlock": None,    "grants": "ssj_namek"},
+            100: {"name": "FRIEZA 100%",   "hp": 1200000, "pl": 6000000,  "unlock": "frieza","grants": None},
         },
     },
 }
@@ -139,20 +187,20 @@ _MODIFIER_POOL = (
 )
 
 ALL_SHOP_ITEMS = {
-    "senzu":          {"name": "Senzu Bean",         "desc": "Fully restores HP and clears all debuffs.",        "base_cost": 120},
-    "gravity_x10":    {"name": "10x Gravity",        "desc": "+20% of your current Power Level. Costs 10% HP.",  "base_cost": 180},
-    "gravity_x100":   {"name": "100x Gravity",       "desc": "+40% of your current Power Level. Large PL spike.", "base_cost": 450},
-    "scouter_v3":     {"name": "Prototype Scouter",  "desc": "+15% Crit chance.",                               "base_cost": 350},
-    "ki_overdrive":   {"name": "Ki Overdrive",       "desc": "Doubles Ki gain per action.",                     "base_cost": 250},
-    "fruit_tree":     {"name": "Fruit of Might",     "desc": "+15% permanent damage output.",                   "base_cost": 500},
-    "tail_regrow":    {"name": "Ancient Ointment",   "desc": "+8% Lifesteal on every hit.",                     "base_cost": 400},
-    "alloy_plating":  {"name": "Katchin Armor",      "desc": "Reduces all incoming damage by 150 flat.",        "base_cost": 400},
-    "adrenaline":     {"name": "Saiyan Pride",       "desc": "Damage rises the lower your HP falls.",           "base_cost": 300},
-    "prophetic_fish": {"name": "Oracle Snack",       "desc": "+12% Dodge chance.",                              "base_cost": 600},
-    "dende_blessing": {"name": "Grand Elder's Gift", "desc": "+2500 max HP permanently.",                       "base_cost": 750},
-    "z_sword":        {"name": "Z-Sword Fragment",   "desc": "+20% Defense Penetration.",                       "base_cost": 550},
-    "spirit_water":   {"name": "Ultra Divine Water", "desc": "Randomly boosts one stat significantly.",         "base_cost": 400},
-    "yardrat_manual": {"name": "Yardrat Secret",     "desc": "+20% Dodge and Ki Regen boost.",                  "base_cost": 500},
+    "senzu":          {"name": "Senzu Bean",         "desc": "Fully restores HP and clears all debuffs.",               "base_cost": 120},
+    "gravity_x10":    {"name": "10x Gravity",        "desc": "+20% of your current Power Level. Costs 10% HP.",         "base_cost": 180},
+    "gravity_x100":   {"name": "100x Gravity",       "desc": "+40% of your current Power Level. Large PL spike.",       "base_cost": 450},
+    "scouter_v3":     {"name": "Prototype Scouter",  "desc": "+15% Crit chance.",                                       "base_cost": 350},
+    "ki_overdrive":   {"name": "Ki Overdrive",       "desc": "Doubles Ki gain per action.",                             "base_cost": 250},
+    "fruit_tree":     {"name": "Fruit of Might",     "desc": "+15% permanent damage output.",                           "base_cost": 500},
+    "tail_regrow":    {"name": "Ancient Ointment",   "desc": "+8% Lifesteal on every hit.",                             "base_cost": 400},
+    "alloy_plating":  {"name": "Katchin Armor",      "desc": "Reduces all incoming damage by 150 flat.",                "base_cost": 400},
+    "adrenaline":     {"name": "Saiyan Pride",       "desc": "Damage rises the lower your HP falls.",                   "base_cost": 300},
+    "prophetic_fish": {"name": "Oracle Snack",       "desc": "+12% Dodge chance.",                                      "base_cost": 600},
+    "dende_blessing": {"name": "Grand Elder's Gift", "desc": "+2500 max HP permanently.",                               "base_cost": 750},
+    "z_sword":        {"name": "Z-Sword Fragment",   "desc": "+20% Defense Penetration.",                               "base_cost": 550},
+    "spirit_water":   {"name": "Ultra Divine Water", "desc": "Randomly boosts one stat significantly.",                  "base_cost": 400},
+    "yardrat_manual": {"name": "Yardrat Secret",     "desc": "+20% Dodge and Ki Regen boost.",                          "base_cost": 500},
 }
 
 
@@ -189,6 +237,14 @@ class GameState:
         self.status_effects = []
         self.zeni = 850
         self.current_shop = []
+        # Transformation state
+        self.active_transform = None
+        self.transform_mult = 1.0
+        self.transform_hp_drain = 0.0
+        self.transform_ki_drain = 0.0
+        self.transform_def_mult = 1.0
+        self.kaioken_unlocked = (char_type == "goku_namek")
+        self.ssj_unlocked = False
         self.enemy = self.spawn_enemy()
 
     def update_stats(self):
@@ -204,24 +260,33 @@ class GameState:
         saga_name = self.get_saga()
         pool = ENEMY_POOLS.get(saga_name, ENEMY_POOLS["SAIYAN"])
 
-        if self.wave % 10 == 0:
-            boss = pool["bosses"].get(self.wave)
-            if boss:
-                return {
-                    "name": boss["name"],
-                    "hp": boss["hp"], "max_hp": boss["hp"],
-                    "pl": boss["pl"], "boss": True,
-                    "modifier": None, "dodge": 0.0,
-                    "armor": 0, "dmg_mult": 1.0,
-                    "unlock": boss.get("unlock"),
-                }
-            hp = 25000 + self.wave * 2000
-            pl = 18000 + self.wave * 500
+        # Check if current wave is a defined boss wave
+        if self.wave in pool["bosses"]:
+            boss = pool["bosses"][self.wave]
             return {
-                "name": f"ELITE WARRIOR W{self.wave}",
-                "hp": hp, "max_hp": hp, "pl": pl, "boss": True,
-                "modifier": None, "dodge": 0.0, "armor": 0,
-                "dmg_mult": 1.0, "unlock": None,
+                "name":     boss["name"],
+                "hp":       boss["hp"],
+                "max_hp":   boss["hp"],
+                "pl":       boss["pl"],
+                "boss":     True,
+                "modifier": None,
+                "dodge":    0.0,
+                "armor":    0,
+                "dmg_mult": 1.0,
+                "unlock":   boss.get("unlock"),
+                "grants":   boss.get("grants"),
+            }
+
+        # Fallback elite encounter every 10 non-boss waves divisible by 10
+        if self.wave % 10 == 0:
+            base = 25000 + self.wave * 2000
+            return {
+                "name":     f"ELITE WARRIOR W{self.wave}",
+                "hp":       base, "max_hp": base,
+                "pl":       10000 + self.wave * 1000,
+                "boss":     True, "modifier": None,
+                "dodge": 0.0, "armor": 0, "dmg_mult": 1.0,
+                "unlock": None, "grants": None,
             }
 
         template = random.choice(pool["minions"])
@@ -230,11 +295,11 @@ class GameState:
         hp = int((template["base_hp"] + self.wave * template["hp_scale"]) * mod["hp_mult"])
         pl = int((template["base_pl"] * (template["pl_scale"] ** (self.wave - 1))) * mod["pl_mult"])
         return {
-            "name": template["name"],
-            "hp": hp, "max_hp": hp, "pl": pl, "boss": False,
+            "name":     template["name"],
+            "hp":       hp, "max_hp": hp, "pl": pl, "boss": False,
             "modifier": mod_key if mod_key != "NONE" else None,
-            "dodge": mod["dodge"], "armor": mod["armor"],
-            "dmg_mult": mod["dmg_mult"], "unlock": None,
+            "dodge":    mod["dodge"], "armor": mod["armor"],
+            "dmg_mult": mod["dmg_mult"], "unlock": None, "grants": None,
         }
 
     def apply_zenkai(self):
@@ -253,6 +318,13 @@ class GameState:
             item["id"] = k
             item["cost"] = int(item["base_cost"] * scale)
             self.current_shop.append(item)
+
+    def drop_transform(self):
+        self.active_transform = None
+        self.transform_mult = 1.0
+        self.transform_hp_drain = 0.0
+        self.transform_ki_drain = 0.0
+        self.transform_def_mult = 1.0
 
 
 def current_state():
@@ -276,7 +348,8 @@ def _enemy_attack(state):
     if state.enemy.get("boss"):
         e_base *= 1.25
     dmg_mult = state.enemy.get("dmg_mult", 1.0)
-    e_dmg = int(e_base * dmg_mult * state.defense_mod) - state.flat_reduction
+    # Kaioken strains the body — player takes proportionally more damage while transformed
+    e_dmg = int(e_base * dmg_mult * state.defense_mod * state.transform_def_mult) - state.flat_reduction
     if state.is_guarding:
         e_dmg = int(e_dmg * 0.25)
     e_dmg = max(20, e_dmg)
@@ -304,12 +377,14 @@ def get_roster():
     for char_id, cdata in CHAR_ROSTER.items():
         roster.append({
             "id":           char_id,
+            "name":         cdata["name"],
             "base_pl":      cdata["base_pl"],
             "base_hp":      cdata["base_hp"],
             "unlocked":     char_id in unlocked,
             "sprite_ready": cdata["sprite_set"],
-            "unlock_by":    cdata["unlock_by"],
+            "unlock_by":    cdata.get("unlock_by"),
             "category":     cdata["category"],
+            "saga":         cdata.get("saga", "SAIYAN"),
         })
     return jsonify({"roster": roster, "zenkai": zenkai})
 
@@ -325,7 +400,8 @@ def select_char():
         return jsonify({"error": "Character not unlocked"}), 403
     state = current_state()
     state.reset(char)
-    return jsonify({"player": vars(state), "enemy": state.enemy})
+    transforms = list(CHAR_TRANSFORMS.get(char, {}).keys())
+    return jsonify({"player": vars(state), "enemy": state.enemy, "transforms": transforms})
 
 
 @app.route("/battle-action", methods=["POST"])
@@ -335,6 +411,23 @@ def battle_action():
     skill = data.get("skill", "jab")
 
     state.ki = min(100, state.ki + state.ki_regen)
+
+    # ── Transformation drain (applied each action) ──────────────────────────
+    transform_msg = None
+    if state.active_transform:
+        if state.transform_hp_drain > 0:
+            drain = max(1, int(state.max_hp * state.transform_hp_drain))
+            state.hp = max(1, state.hp - drain)
+            transform_msg = f"{state.active_transform.upper()} — {drain:,} HP drained"
+            if state.hp <= 1:
+                state.drop_transform()
+                transform_msg += " · FORM DROPPED (HP critical)"
+        elif state.transform_ki_drain > 0:
+            state.ki = max(0, state.ki - state.transform_ki_drain)
+            transform_msg = f"SUPER SAIYAN — {int(state.transform_ki_drain)} Ki burned"
+            if state.ki <= 0:
+                state.drop_transform()
+                transform_msg += " · SUPER SAIYAN DROPPED (Ki exhausted)"
 
     move = MOVES.get(skill, MOVES["jab"])
     ki_cost = move["ki_cost"]
@@ -348,14 +441,17 @@ def battle_action():
         state.ki = min(100, state.ki + int(move["ki_gain"] * state.ki_gain_mult))
         enemy_msg, game_over = _enemy_attack(state)
         return jsonify({
-            "message":     "GUARDING — incoming damage reduced by 75%",
-            "enemy_msg":   enemy_msg,
-            "player":      vars(state),
-            "enemy":       state.enemy,
-            "enemy_killed": False,
-            "game_over":   game_over,
-            "zenkai":      False,
-            "shop_items":  [],
+            "message":       "GUARDING — incoming damage reduced by 75%",
+            "enemy_msg":     enemy_msg,
+            "transform_msg": transform_msg,
+            "player":        vars(state),
+            "enemy":         state.enemy,
+            "enemy_killed":  False,
+            "game_over":     game_over,
+            "zenkai":        False,
+            "shop_items":    [],
+            "pl_gained":     0,
+            "capped":        False,
         })
 
     state.is_guarding = False
@@ -363,7 +459,9 @@ def battle_action():
     if ki_gain:
         state.ki = min(100, state.ki + ki_gain)
 
-    raw_dmg = move["base_dmg"] * (1 + state.pl / 380)
+    # ── Damage calculation using effective (transformed) PL ─────────────────
+    effective_pl = state.pl * state.transform_mult
+    raw_dmg = move["base_dmg"] * (1 + effective_pl / 380)
     if state.adrenaline_scale > 0 and state.max_hp > 0:
         raw_dmg *= 1 + state.adrenaline_scale * (1 - state.hp / state.max_hp)
     raw_dmg *= state.outgoing_damage_mult
@@ -381,13 +479,12 @@ def battle_action():
     if armor and final_dmg > 0:
         final_dmg = max(1, final_dmg - armor)
 
-    # Ultimates are powerful but cannot exceed a % of enemy max HP in one hit
     cap = move.get("hp_cap")
     hit_cap = False
     if cap and state.enemy["max_hp"] > 0:
-        cap_ceiling = int(state.enemy["max_hp"] * cap)
-        if final_dmg > cap_ceiling:
-            final_dmg = cap_ceiling
+        ceiling = int(state.enemy["max_hp"] * cap)
+        if final_dmg > ceiling:
+            final_dmg = ceiling
             hit_cap = True
 
     state.enemy["hp"] = max(0, state.enemy["hp"] - final_dmg)
@@ -406,32 +503,40 @@ def battle_action():
     enemy_msg = ""
     game_over = False
     zenkai_triggered = False
+    pl_gained = 0
 
     if enemy_killed:
-        if state.enemy.get("boss") and state.enemy.get("unlock"):
+        boss = state.enemy.get("boss")
+        if boss and state.enemy.get("unlock"):
             save_unlock(state.enemy["unlock"])
+        # Handle transformation grants from boss kills
+        grant = state.enemy.get("grants")
+        if grant == "kaioken" and state.char == "goku":
+            state.kaioken_unlocked = True
+        elif grant == "ssj_namek" and state.char == "goku_namek":
+            state.ssj_unlocked = True
         state.zeni += 180 + state.wave * 15
-        if state.enemy.get("boss"):
+        if boss:
             state.zeni += 600
         zenkai_triggered = state.apply_zenkai()
-        pl_gained = int(state.enemy["pl"] * 0.05)
+        pl_gained = int(state.enemy["pl"] * 0.12)
         state.pl += pl_gained
         state.generate_shop()
     else:
-        pl_gained = 0
         enemy_msg, game_over = _enemy_attack(state)
 
     return jsonify({
-        "message":      player_msg,
-        "enemy_msg":    enemy_msg,
-        "player":       vars(state),
-        "enemy":        state.enemy,
-        "enemy_killed": enemy_killed,
-        "game_over":    game_over,
-        "zenkai":       zenkai_triggered,
-        "shop_items":   state.current_shop,
-        "pl_gained":    pl_gained,
-        "capped":       hit_cap,
+        "message":       player_msg,
+        "enemy_msg":     enemy_msg,
+        "transform_msg": transform_msg,
+        "player":        vars(state),
+        "enemy":         state.enemy,
+        "enemy_killed":  enemy_killed,
+        "game_over":     game_over,
+        "zenkai":        zenkai_triggered,
+        "shop_items":    state.current_shop,
+        "pl_gained":     pl_gained,
+        "capped":        hit_cap,
     })
 
 
@@ -441,6 +546,40 @@ def battle_status():
     p = vars(state)
     p["saga"] = state.get_saga()
     return jsonify({"player": p})
+
+
+@app.route("/transform", methods=["POST"])
+def transform():
+    state = current_state()
+    mode = request.get_json().get("mode", "none")
+
+    if mode == "none":
+        state.drop_transform()
+        return jsonify({"player": vars(state), "message": "TRANSFORMATION RELEASED"})
+
+    char_table = CHAR_TRANSFORMS.get(state.char, {})
+    t = char_table.get(mode)
+    if not t:
+        return jsonify({"error": "Transform not available for this character"}), 400
+
+    req = t.get("req")
+    if req == "kaioken" and not state.kaioken_unlocked:
+        return jsonify({"error": "KAIOKEN NOT UNLOCKED — defeat NAPPA first"}), 403
+    if req == "ssj" and not state.ssj_unlocked:
+        return jsonify({"error": "SUPER SAIYAN LOCKED — defeat FRIEZA 50% to awaken"}), 403
+
+    state.active_transform   = mode
+    state.transform_mult     = t["mult"]
+    state.transform_hp_drain = t["hp_drain"]
+    state.transform_ki_drain = t["ki_drain"]
+    state.transform_def_mult = t["def_pen"]
+
+    drain_str = (f"{int(t['hp_drain']*100)}% HP/turn" if t["hp_drain"] > 0
+                 else f"{int(t['ki_drain'])} Ki/turn")
+    return jsonify({
+        "player":  vars(state),
+        "message": f"{t['label']} ACTIVATED · Drain: {drain_str}",
+    })
 
 
 @app.route("/purchase", methods=["POST"])
@@ -485,7 +624,6 @@ def purchase():
         detail = f"Damage Output → x{state.outgoing_damage_mult:.2f}"
     elif item_id == "ki_overdrive":
         state.ki_gain_mult = 2.0
-        state.defense_mod *= 1.05
         detail = "Ki Gain x2 active"
     elif item_id == "tail_regrow":
         state.lifesteal = min(0.5, state.lifesteal + 0.08)
@@ -544,8 +682,10 @@ def next_enemy():
     state = current_state()
     state.wave += 1
     state.is_guarding = False
+    state.drop_transform()
     state.enemy = state.spawn_enemy()
-    return jsonify({"enemy": state.enemy, "player": vars(state)})
+    transforms = list(CHAR_TRANSFORMS.get(state.char, {}).keys())
+    return jsonify({"enemy": state.enemy, "player": vars(state), "transforms": transforms})
 
 
 if __name__ == "__main__":
