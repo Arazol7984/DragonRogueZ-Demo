@@ -801,6 +801,16 @@ def battle_action():
             final_dmg = ceiling
             hit_cap = True
 
+    # ── Global per-hit damage cap (prevents one-shots) ───────────────────
+    # Bosses: max 33% of max HP per hit. Minions: max 80% of max HP per hit.
+    if state.enemy["max_hp"] > 0 and not dodged:
+        is_boss_enemy = state.enemy.get("boss", False)
+        global_cap_pct = 0.33 if is_boss_enemy else 0.80
+        global_ceiling = int(state.enemy["max_hp"] * global_cap_pct)
+        if final_dmg > global_ceiling:
+            final_dmg = global_ceiling
+            hit_cap = True
+
     state.enemy["hp"] = max(0, state.enemy["hp"] - final_dmg)
     state.run_stats["dmg_dealt"] = state.run_stats.get("dmg_dealt", 0) + final_dmg
 
