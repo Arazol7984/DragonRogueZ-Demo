@@ -239,6 +239,36 @@
     .defeat-stat .ds-val{font-size:16px;color:var(--gold);display:block;margin-bottom:2px}
     #defeat-best{font-size:13px;letter-spacing:2px}
     #defeat-btn{margin-top:6px}
+    /* ── SWAP FIGHTER SCREEN ── */
+    #screen-swap{position:absolute;inset:0;background:rgba(0,0,0,.95);z-index:200;
+      display:flex;flex-direction:column;padding:20px 28px;gap:10px}
+    #swap-header-area{border-bottom:1px solid var(--border);padding-bottom:10px}
+    #swap-title{font-size:20px;color:var(--gold);letter-spacing:4px}
+    #swap-subtitle{font-size:11px;color:var(--dim);letter-spacing:2px;margin-top:3px}
+    #swap-scroll{flex:1;overflow-y:auto;padding-right:4px}
+    .swap-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+    .swap-card{width:175px;height:90px;border:1px solid var(--border);
+      background:var(--panel);cursor:pointer;position:relative;overflow:hidden;
+      transition:border-color .2s,box-shadow .2s}
+    .swap-card:hover{border-color:var(--green);box-shadow:0 0 12px rgba(0,255,136,.3)}
+    .swap-card.active-char{border-color:var(--gold);box-shadow:0 0 10px rgba(255,215,0,.4)}
+    .swap-card .sc-name{position:absolute;bottom:0;left:0;right:0;
+      background:rgba(0,0,0,.8);font-size:10px;padding:3px 5px;color:var(--green)}
+    .swap-card .sc-passive{font-size:8px;color:var(--purple);margin-top:1px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    /* ── DRAGON BALL DISPLAY ── */
+    #db-section{border:1px solid rgba(255,165,0,.3);padding:5px 7px;
+      background:rgba(255,165,0,.04)}
+    #db-title{font-size:10px;color:#ffa500;letter-spacing:2px}
+    #db-orbs{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap}
+    .db-orb{width:14px;height:14px;border-radius:50%;border:1px solid #555;
+      background:#222;font-size:8px;display:flex;align-items:center;justify-content:center;color:#555}
+    .db-orb.collected{background:radial-gradient(circle,#ffd700,#ff8c00);
+      border-color:#ffd700;color:#000;box-shadow:0 0 4px #ffd700}
+    /* ── SAIYAN RAGE ── */
+    #rage-line{color:var(--red);letter-spacing:1px}
+    @keyframes rage-pulse{0%{text-shadow:0 0 4px var(--red)}50%{text-shadow:0 0 12px var(--red)}100%{text-shadow:0 0 4px var(--red)}}
+    #rage-line{animation:rage-pulse 1s infinite}
 
     /* ═══════════════════════════════════════════════════════════════
        MOBILE  (≤ 900px — phone portrait)
@@ -313,6 +343,10 @@
       .enc-btns .btn{flex:1;min-height:44px;font-size:13px}
       #boss-preview-bar{font-size:10px;padding:5px 8px}
 
+      /* ── Swap screen on mobile ── */
+      #screen-swap{padding:14px}
+      .swap-card{width:calc(50% - 4px)}
+
       /* ── Status / transform / defeat overlays on mobile ── */
       #screen-status{padding:14px}
       #status-body{flex-direction:column;overflow-y:auto}
@@ -370,6 +404,7 @@
   <!-- LEFT PANEL -->
   <div class="panel-left">
     <div class="p-name" id="p-name">GOKU</div>
+    <div id="p-passive-lbl" style="font-size:9px;color:var(--purple);letter-spacing:1px;margin-bottom:2px"></div>
     <div class="bar-wrap">
       <div class="bar-label">HP</div>
       <div class="bar-outer bar-hp"><div class="bar-inner" id="hp-bar" style="width:100%"></div></div>
@@ -392,6 +427,11 @@
     <div class="data-line">CRIT: <span id="p-crit-val" class="data-dim">5%</span></div>
     <div class="data-line">DODGE: <span id="p-dodge-val" class="data-dim">3%</span></div>
     <div id="streak-line" class="data-line" style="display:none">STREAK: <span id="p-streak-val" style="color:var(--gold)">0</span></div>
+    <div id="rage-line" class="data-line" style="display:none">⚡ RAGE: <span id="p-rage-val">0</span> turns</div>
+    <div id="db-section" style="display:none;margin-top:4px">
+      <div id="db-title">◉ DRAGON BALLS</div>
+      <div id="db-orbs"></div>
+    </div>
     <div style="font-size:12px;color:var(--dim);letter-spacing:2px;margin-top:4px">AUGMENTS</div>
     <div class="aug-list" id="aug-list"></div>
     <div id="curse-section" style="display:none">
@@ -436,6 +476,7 @@
         <button class="btn btn-gold" id="btn-transform-open" onclick="OS.openTransformScreen()">TRANSFORM<span class="key-hint">[T]</span></button>
         <button class="btn" id="btn-guard"  onclick="OS.act('guard')">GUARD<span class="key-hint">[G]</span></button>
         <button class="btn" id="btn-status" onclick="OS.showStatus()">STATUS<span class="key-hint">[I]</span></button>
+        <button class="btn" id="btn-swap"   onclick="OS.openSwap()">SWAP<span class="key-hint">[F]</span></button>
       </div>
     </div>
   </div>
@@ -451,7 +492,7 @@
     <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:6px;
                 font-size:12px;color:var(--dim);letter-spacing:2px">CONTROLS</div>
     <div style="font-size:12px;color:var(--dim);line-height:2.2">
-      [J] STRIKE<br>[S] SPECIALS<br>[T] TRANSFORM<br>[G] GUARD<br>[I] STATUS<br>[ESC] CLOSE
+      [J] STRIKE<br>[S] SPECIALS<br>[T] TRANSFORM<br>[G] GUARD<br>[I] STATUS<br>[F] SWAP<br>[ESC] CLOSE
     </div>
   </div>
 </div>
@@ -479,6 +520,7 @@
     <button class="btn" id="reroll-btn" onclick="OS.refreshShop()">
       REROLL <span id="reroll-cost-lbl">[— Z]</span>
     </button>
+    <button class="btn" onclick="OS.openSwap()">SWAP FIGHTER</button>
     <button class="btn btn-gold" onclick="OS.closeShop()">CONTINUE →<span class="key-hint">[ENTER]</span></button>
   </div>
 </div>
@@ -526,10 +568,53 @@
   </button>
 </div>
 
+<!-- ═══════════ SWAP FIGHTER ═══════════ -->
+<div id="screen-swap" class="screen hidden">
+  <div id="swap-header-area">
+    <div id="swap-title">◈ SWAP FIGHTER</div>
+    <div id="swap-subtitle">Your PL, Zeni &amp; all augments carry over · HP resets to new fighter's max · New passive stacks on top</div>
+    <div id="swap-wave-info" style="font-size:11px;color:var(--gold);margin-top:4px;letter-spacing:2px"></div>
+  </div>
+  <div id="swap-scroll"></div>
+  <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;gap:10px;align-items:center">
+    <button class="btn" onclick="OS.closeSwap()">CANCEL [ESC]</button>
+    <span style="font-size:10px;color:var(--dim);letter-spacing:1px">Only unlocked fighters shown · Current fighter highlighted</span>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 //  ASSETS
 // ═══════════════════════════════════════════════════════════════════════════
+const CHAR_PASSIVES = {
+  goku:       "BATTLE SENSE — Crit+5%",
+  goku_namek: "MASTER OF KI — Ki Regen+3",
+  vegeta:     "ELITE PRIDE — Dmg+10%, Crit+10%",
+  piccolo:    "STRATEGIC — Ki Regen+4, Ki Gain×2",
+  krillin:    "SEASONED — Crit+15%, Armor+100",
+  yamcha:     "WOLF FANG — Dodge+10%",
+  tien:       "MULTI-FORM — Dmg+12%",
+  chiaotzu:   "PSYCHIC — Armor+200, Ki Regen+2",
+  raditz:     "ELITE INSTINCTS — Dodge+12%, Crit+8%",
+  nappa:      "GREAT APE — Max HP+1500",
+  dodoria:    "BRUTE FORCE — Armor+150, Max HP+1000",
+  zarbon:     "BEAUTIFUL WARRIOR — Dodge+8%, Crit+8%",
+  guldo:      "TIME FREEZE — Ki Regen+5, Dodge+10%",
+  recoome:    "GRAPPLER — Max HP+2000, Armor+200",
+  burter:     "FASTEST IN UNIVERSE — Dodge+15%, Crit+5%",
+  jeice:      "CRUSHER BALL — Dmg+12%, Ki Regen+2",
+  ginyu:      "BODY CHANGE — All stats+8%",
+  frieza:     "EMPEROR'S WILL — Dmg+20%, Crit+15%",
+};
+
+const SAGA_INTRO_QUOTES = {
+  NAMEK:   "APPROACHING PLANET NAMEK — A NEW BATTLE FOR THE DRAGON BALLS BEGINS!",
+  FRIEZA:  "FRIEZA'S FORCES MOBILIZE — THE EMPEROR OF THE UNIVERSE AWAITS!",
+  ANDROID: "DR. GERO'S ANDROID ARMY AWAKENS — THE ANDROID SAGA BEGINS!",
+  CELL:    "THE PERFECT BEING ABSORBS ALL — CELL APPROACHES PERFECTION!",
+  BUU:     "THE ANCIENT EVIL STIRS — MAJIN BUU HAS BEEN UNLEASHED!",
+};
+
 // Display names for mobile header
 const CHAR_ROSTER_NAMES = {
   goku:"GOKU · SAIYAN", goku_namek:"GOKU · NAMEK",
@@ -833,6 +918,10 @@ const UI = {
     UI.setText("wave-num",    p.wave);
     UI.setText("zeni-lbl",    `⊛ ${UI.fmt(p.zeni)}`);
     UI.setText("saga-lbl",    `${p.saga || "SAIYAN"} SAGA`);
+    // Character name + passive in left panel
+    UI.setText("p-name", CHAR_ROSTER_NAMES[OS.char] || OS.char.toUpperCase());
+    UI.setText("p-passive-lbl", CHAR_PASSIVES[OS.char] || "");
+
     // Streak display
     const streakLine = document.getElementById("streak-line");
     if (p.kill_streak > 0) {
@@ -841,6 +930,28 @@ const UI = {
       streakLine.style.display = "";
     } else {
       streakLine.style.display = "none";
+    }
+
+    // Saiyan Rage display
+    const rageLine = document.getElementById("rage-line");
+    if (p.saiyan_rage_turns > 0) {
+      UI.setText("p-rage-val", p.saiyan_rage_turns);
+      rageLine.style.display = "";
+    } else {
+      rageLine.style.display = "none";
+    }
+
+    // Dragon Ball orb display
+    const dbSection = document.getElementById("db-section");
+    const dbCount   = p.dragon_balls || 0;
+    dbSection.style.display = "";
+    {
+      const orbs = document.getElementById("db-orbs");
+      orbs.innerHTML = Array.from({length:7}, (_, i) =>
+        `<div class="db-orb${i < dbCount ? " collected" : ""}">${i < dbCount ? "★" : ""}</div>`
+      ).join("");
+    } else {
+      dbSection.style.display = "none";
     }
 
     // Transform status panel
@@ -1001,7 +1112,10 @@ const OS = {
             `;
           } else {
             card.innerHTML = `
-              <div class="card-name">${c.name}<div class="card-pl">PL ${UI.fmt(c.base_pl)}</div></div>
+              <div class="card-name">${c.name}
+                <div class="card-pl">PL ${UI.fmt(c.base_pl)}</div>
+                <div style="font-size:8px;color:var(--purple);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.passive || ""}</div>
+              </div>
             `;
             card.addEventListener("click", () => OS.selectChar(c.id));
           }
@@ -1203,6 +1317,18 @@ const OS = {
     if (data.streak_msg) {
       UI.log(data.streak_msg, "gold");
     }
+    // Saiyan Rage trigger
+    if (data.rage_msg) {
+      UI.log(data.rage_msg, "red");
+    }
+    // Dragon Ball found
+    if (data.dragon_ball_msg) {
+      UI.log(data.dragon_ball_msg, data.dragon_ball_msg.includes("ALL 7") ? "gold" : "blue");
+    }
+    // PL milestone
+    if (data.milestone_msg) {
+      UI.log(`— ${data.milestone_msg} —`, "gold");
+    }
     if (data.capped) {
       UI.log("ULTIMATE CAPPED — max single-hit threshold reached", "dim");
     }
@@ -1274,9 +1400,10 @@ const OS = {
   },
 
   setBusy(busy) {
-    document.getElementById("btn-jab").disabled    = busy;
-    document.getElementById("btn-specials").disabled= busy;
-    document.getElementById("btn-guard").disabled  = busy;
+    document.getElementById("btn-jab").disabled     = busy;
+    document.getElementById("btn-specials").disabled = busy;
+    document.getElementById("btn-guard").disabled   = busy;
+    document.getElementById("btn-swap").disabled    = busy;
   },
 
   // ── Victory / Shop ────────────────────────────────────────────────────
@@ -1395,14 +1522,23 @@ const OS = {
     OS.lastEnemy = data.enemy;
     UI.updateDisplay({player: data.player, enemy: data.enemy});
     const charData = ASSETS[OS.char] || ASSETS["goku"];
-    document.getElementById("p-sprite").src =
-      `/static/images/${charData.idle}`;
+    document.getElementById("p-sprite").src = `/static/images/${charData.idle}`;
+
+    // Saga transition announcement
+    if (data.saga_changed && SAGA_INTRO_QUOTES[data.new_saga]) {
+      UI.log(`◈ ── ${SAGA_INTRO_QUOTES[data.new_saga]} ── ◈`, "gold");
+    }
+
     UI.log(`— WAVE ${data.player.wave} — ${data.enemy.name} appears!`, "dim");
     if (data.enemy.modifier) {
       UI.log(`MODIFIER: ${data.enemy.modifier}`, "gold");
     }
     if (data.enemy.boss) {
       UI.log(`⚠ BOSS ENCOUNTER: ${data.enemy.name}`, "red");
+      if (data.boss_quote) {
+        await new Promise(r => setTimeout(r, 400));
+        UI.log(`"${data.boss_quote}"`, "purple");
+      }
     }
   },
 
@@ -1488,6 +1624,99 @@ const OS = {
 
   closeStatus() { UI.hide("screen-status"); },
 
+  // ── Fighter Swap ──────────────────────────────────────────────────────────
+  openSwap() {
+    OS.closeMenus();
+    const p = OS.lastPlayer;
+    if (!p) return;
+    UI.setText("swap-wave-info",
+      `WAVE ${p.wave} · PL ${UI.fmt(p.pl)} · ⊛ ${UI.fmt(p.zeni)}`);
+    OS._buildSwapRoster();
+    UI.show("screen-swap");
+  },
+
+  closeSwap() {
+    UI.hide("screen-swap");
+  },
+
+  async _buildSwapRoster() {
+    const res  = await fetch("/get-roster", {credentials:"include"});
+    const data = await res.json();
+    const scroll = document.getElementById("swap-scroll");
+    scroll.innerHTML = "";
+
+    const sections = {};
+    for (const c of data.roster) {
+      if (!c.unlocked) continue;
+      const key = c.saga || "SAIYAN";
+      if (!sections[key]) sections[key] = [];
+      sections[key].push(c);
+    }
+
+    const sagaOrder = ["SAIYAN","NAMEK","FRIEZA","ANDROID","CELL","BUU"];
+    for (const sagaName of sagaOrder) {
+      const chars = sections[sagaName];
+      if (!chars || !chars.length) continue;
+      const hdr = document.createElement("div");
+      hdr.className = "saga-header";
+      hdr.style.cssText = "margin-bottom:8px;margin-top:10px";
+      hdr.textContent = `◈ ${sagaName} SAGA`;
+      scroll.appendChild(hdr);
+
+      const row = document.createElement("div");
+      row.className = "swap-row";
+      for (const c of chars) {
+        const card = document.createElement("div");
+        const isCurrent = c.id === OS.char;
+        card.className = "swap-card" + (isCurrent ? " active-char" : "");
+        card.innerHTML = `
+          <div class="sc-name">
+            ${c.name}
+            <div class="sc-passive">${c.passive || ""}</div>
+            <div style="font-size:8px;color:var(--dim)">PL ${UI.fmt(c.base_pl)}</div>
+          </div>
+          ${isCurrent ? `<div style="position:absolute;top:4px;right:5px;font-size:8px;color:var(--gold)">ACTIVE</div>` : ""}
+        `;
+        if (!isCurrent) {
+          card.addEventListener("click", () => OS.swapFighter(c.id));
+        }
+        row.appendChild(card);
+      }
+      scroll.appendChild(row);
+    }
+  },
+
+  async swapFighter(charId) {
+    UI.hide("screen-swap");
+    const res = await fetch("/swap-fighter", {
+      method:"POST", credentials:"include",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({character: charId}),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      UI.log(data.error || "SWAP FAILED", "red");
+      return;
+    }
+    OS.char       = charId;
+    OS.lastPlayer = data.player;
+    OS.lastEnemy  = data.enemy;
+    OS.buildSkillButtons();
+    UI.updateDisplay({player: data.player, enemy: data.enemy});
+
+    const charData = ASSETS[OS.char] || ASSETS["goku"];
+    document.getElementById("p-sprite").src = `/static/images/${charData.idle}`;
+
+    UI.log(data.message, "gold");
+    if (data.passive) {
+      UI.log(`PASSIVE: ${data.passive}`, "purple");
+    }
+    UI.log(`HP RESET TO ${UI.fmt(data.player.max_hp)} · PL KEPT`, "green");
+    UI.log(`— WAVE ${data.player.wave} — ${data.enemy.name} awaits! —`, "dim");
+    if (data.enemy.modifier) UI.log(`MODIFIER: ${data.enemy.modifier}`, "gold");
+    if (data.enemy.boss)     UI.log(`⚠ BOSS: ${data.enemy.name}`, "red");
+  },
+
   // ── Defeat ────────────────────────────────────────────────────────────
   async showDefeat(p) {
     UI.setText("defeat-wave", `FELL ON WAVE ${p.wave}`);
@@ -1538,7 +1767,8 @@ document.addEventListener("keydown", e => {
   const key = e.key.toLowerCase();
 
   // Close screens
-  if (key === "escape") {
+    if (key === "escape") {
+    if (!document.getElementById("screen-swap").classList.contains("hidden"))    { OS.closeSwap(); return; }
     if (!document.getElementById("screen-status").classList.contains("hidden"))  { OS.closeStatus(); return; }
     if (!document.getElementById("screen-transform").classList.contains("hidden")){ OS.closeTransformScreen(); return; }
     if (!document.getElementById("screen-shop").classList.contains("hidden"))    return; // shop close by Enter
@@ -1560,6 +1790,7 @@ document.addEventListener("keydown", e => {
     if (key === "i") { OS.showStatus(); return; }
     if (key === "t") { OS.openTransformScreen(); return; }
     if (key === "s") { OS.toggleMenu("specials-menu"); return; }
+    if (key === "f") { OS.openSwap(); return; }
     // Number keys for specials
     const skills = SKILL_LAYOUT[OS.char] || SKILL_LAYOUT["goku"];
     const idx = parseInt(key) - 1;
