@@ -140,8 +140,8 @@ _MODIFIER_POOL = (
 
 ALL_SHOP_ITEMS = {
     "senzu":          {"name": "Senzu Bean",         "desc": "Fully restores HP and clears all debuffs.",        "base_cost": 120},
-    "gravity_x10":    {"name": "10x Gravity",        "desc": "Big PL boost, costs 10% of current HP.",          "base_cost": 180},
-    "gravity_x100":   {"name": "100x Gravity",       "desc": "Massive PL boost, scales with Sector.",           "base_cost": 450},
+    "gravity_x10":    {"name": "10x Gravity",        "desc": "+20% of your current Power Level. Costs 10% HP.",  "base_cost": 180},
+    "gravity_x100":   {"name": "100x Gravity",       "desc": "+40% of your current Power Level. Large PL spike.", "base_cost": 450},
     "scouter_v3":     {"name": "Prototype Scouter",  "desc": "+15% Crit chance.",                               "base_cost": 350},
     "ki_overdrive":   {"name": "Ki Overdrive",       "desc": "Doubles Ki gain per action.",                     "base_cost": 250},
     "fruit_tree":     {"name": "Fruit of Might",     "desc": "+15% permanent damage output.",                   "base_cost": 500},
@@ -383,8 +383,12 @@ def battle_action():
 
     # Ultimates are powerful but cannot exceed a % of enemy max HP in one hit
     cap = move.get("hp_cap")
+    hit_cap = False
     if cap and state.enemy["max_hp"] > 0:
-        final_dmg = min(final_dmg, int(state.enemy["max_hp"] * cap))
+        cap_ceiling = int(state.enemy["max_hp"] * cap)
+        if final_dmg > cap_ceiling:
+            final_dmg = cap_ceiling
+            hit_cap = True
 
     state.enemy["hp"] = max(0, state.enemy["hp"] - final_dmg)
 
@@ -410,9 +414,11 @@ def battle_action():
         if state.enemy.get("boss"):
             state.zeni += 600
         zenkai_triggered = state.apply_zenkai()
-        state.pl += int(state.enemy["pl"] * 0.18)
+        pl_gained = int(state.enemy["pl"] * 0.05)
+        state.pl += pl_gained
         state.generate_shop()
     else:
+        pl_gained = 0
         enemy_msg, game_over = _enemy_attack(state)
 
     return jsonify({
@@ -424,6 +430,8 @@ def battle_action():
         "game_over":    game_over,
         "zenkai":       zenkai_triggered,
         "shop_items":   state.current_shop,
+        "pl_gained":    pl_gained,
+        "capped":       hit_cap,
     })
 
 
@@ -452,14 +460,14 @@ def purchase():
         state.status_effects = []
         detail = "HP fully restored"
     elif item_id == "gravity_x10":
-        gain = int(350 * s)
+        gain = int(state.pl * 0.20)
         state.pl += gain
         state.hp = max(1, int(state.hp * 0.9))
-        detail = f"PL +{gain:,} (HP cost: -10%)"
+        detail = f"PL +{gain:,} (20% of current · HP cost -10%)"
     elif item_id == "gravity_x100":
-        gain = int(800 * s)
+        gain = int(state.pl * 0.40)
         state.pl += gain
-        detail = f"PL +{gain:,}"
+        detail = f"PL +{gain:,} (40% of current)"
     elif item_id == "dende_blessing":
         state.base_max_hp += 2500
         detail = "Max HP +2,500"
@@ -495,17 +503,17 @@ def purchase():
     elif item_id == "spirit_water":
         roll = random.choice(["pl", "pl2", "hp", "crit", "dodge", "def_pen"])
         if roll == "pl":
-            gain = int(state.pl * 0.15)
-            state.pl = int(state.pl * 1.15)
-            detail = f"LUCKY — Power Level +{gain:,} (15%)"
-        elif roll == "pl2":
-            gain = int(600 * s)
+            gain = int(state.pl * 0.20)
             state.pl += gain
-            detail = f"Power Level +{gain:,}"
+            detail = f"LUCKY — Power Level +{gain:,} (20% of current)"
+        elif roll == "pl2":
+            gain = int(state.pl * 0.12)
+            state.pl += gain
+            detail = f"Power Level +{gain:,} (12% of current)"
         elif roll == "hp":
-            gain = int(1200 * s)
+            gain = int(state.base_max_hp * 0.18)
             state.base_max_hp += gain
-            detail = f"Max HP +{gain:,}"
+            detail = f"Max HP +{gain:,} (18% of current)"
         elif roll == "crit":
             state.crit_chance = min(0.5, state.crit_chance + 0.1)
             detail = f"Crit Chance → {round(state.crit_chance * 100)}%"
@@ -514,7 +522,7 @@ def purchase():
             detail = f"Dodge → {round(state.dodge_chance * 100)}%"
         else:
             state.def_pen += 0.12
-            detail = f"Defense Penetration +12%"
+            detail = "Defense Penetration +12%"
 
     state.update_stats()
     return jsonify({"player": vars(state), "detail": detail})

@@ -363,7 +363,7 @@
       height: 255px; width: auto; max-width: 240px;
       object-fit: contain; object-position: bottom;
       filter: drop-shadow(0 0 16px rgba(0,255,65,0.22));
-      transition: filter 0.2s;
+      transition: filter 0.2s, transform 0.18s ease-out;
     }
     .fighter-sprite.enemy {
       transform: scaleX(-1);
@@ -645,7 +645,7 @@
     };
 
     // Multi-frame attack sequences played before/during action resolution.
-    // Each frame: { sprite: filename, delay: ms from action start }
+    // Each frame: { sprite, delay(ms), scale(optional CSS scale factor) }
     const ANIM_SEQUENCES = {
       goku: {
         heavy: [
@@ -655,11 +655,11 @@
         ],
         beam: [
           { sprite: "goku_charge_kamehameha-removebg-preview.png",  delay: 0   },
-          { sprite: "goku_fire_big_kamehameha-removebg-preview.png", delay: 420 },
+          { sprite: "goku_fire_big_kamehameha-removebg-preview.png", delay: 420, scale: 1.7 },
         ],
         ult: [
           { sprite: "goku_spirit_bomb-removebg-preview.png",      delay: 0   },
-          { sprite: "goku_fire_spirit_bomb-removebg-preview.png", delay: 520 },
+          { sprite: "goku_fire_spirit_bomb-removebg-preview.png", delay: 520, scale: 1.25 },
         ],
       },
       nappa: {
@@ -670,7 +670,7 @@
         ],
         ult: [
           { sprite: "nappa-mouth-beam-chargeup.png", delay: 0   },
-          { sprite: "nappa-mouth-beam-fire.png",     delay: 480 },
+          { sprite: "nappa-mouth-beam-fire.png",     delay: 480, scale: 1.2 },
         ],
       },
       vegeta: {
@@ -682,12 +682,12 @@
         beam: [
           { sprite: "vegeta-galick-gun-windup1.png",    delay: 0   },
           { sprite: "vegeta-galick-gun-fire1.png",      delay: 240 },
-          { sprite: "vegeta-galick-gun-fire-final.png", delay: 420 },
+          { sprite: "vegeta-galick-gun-fire-final.png", delay: 420, scale: 1.3 },
         ],
         ult: [
           { sprite: "vegeta-final-explosion-start.png",  delay: 0   },
           { sprite: "vegeta-final-explosion-middle.png", delay: 280 },
-          { sprite: "vegeta-final-explosion-blast.png",  delay: 520 },
+          { sprite: "vegeta-final-explosion-blast.png",  delay: 520, scale: 1.35 },
         ],
       },
     };
@@ -878,8 +878,12 @@
           setTimeout(() => pSprite.classList.remove("anim-strike"), 500);
         } else if (sequence) {
           // Multi-frame animation — play each frame at its specified delay
-          sequence.forEach(({ sprite, delay }) => {
-            setTimeout(() => { pSprite.src = `/static/images/${sprite}`; }, delay);
+          // scale: optional CSS scale factor applied when the frame fires
+          sequence.forEach(({ sprite, delay, scale }) => {
+            setTimeout(() => {
+              pSprite.src = `/static/images/${sprite}`;
+              pSprite.style.transform = scale ? `scale(${scale})` : '';
+            }, delay);
           });
           pSprite.classList.add("anim-strike");
           setTimeout(() => pSprite.classList.remove("anim-strike"), 500);
@@ -917,10 +921,12 @@
             UI.updateDisplay(data);
 
             if (data.message)   UI.log(data.message, "green");
+            if (data.capped)    UI.log(`ULTIMATE CAPPED — max single-hit threshold reached`, "cyan");
             if (data.enemy_msg) {
               UI.log(data.enemy_msg, "red");
               if (!data.game_over && charData.hurt) {
                 pSprite.src = `/static/images/${charData.hurt}`;
+                pSprite.style.transform = '';
                 pSprite.classList.add("anim-p-hurt");
                 setTimeout(() => {
                   pSprite.classList.remove("anim-p-hurt");
@@ -944,6 +950,8 @@
 
             if (data.enemy_killed) {
               UI.log(`${OS.lastEnemy?.name || "ENEMY"} DEFEATED — UPLOADING SALVAGE DATA`, "gold");
+              if (data.pl_gained && data.pl_gained > 0)
+                UI.log(`POWER LEVEL +${data.pl_gained.toLocaleString()} absorbed`, "cyan");
               eSprite.classList.add("anim-e-hit");
               setTimeout(() => eSprite.classList.remove("anim-e-hit"), 400);
               OS.handleVictory(data);
@@ -955,8 +963,10 @@
           }, 500);
 
           setTimeout(() => {
-            if (!data.game_over && !data.enemy_msg)
+            if (!data.game_over && !data.enemy_msg) {
               pSprite.src = `/static/images/${charData.idle}`;
+              pSprite.style.transform = '';
+            }
           }, 900);
 
         } catch (err) {
@@ -1039,6 +1049,7 @@
 
         const charData = ASSETS[OS.char] || ASSETS.goku;
         document.getElementById("p-sprite").src = `/static/images/${charData.idle}`;
+        document.getElementById("p-sprite").style.transform = '';
         OS.isBusy = false;
 
         const sector = String(data.player.wave).padStart(2, "0");
