@@ -115,6 +115,9 @@ _PERSIST_FIELDS = [
     "curse_list", "dragon_balls", "saiyan_rage_turns", "rage_used",
     "pl_milestones_hit", "kill_streak", "run_stats",
     "enemy", "is_guarding",
+    # Shop state — must persist so purchases still work after a server restart
+    "current_shop", "pending_encounter", "next_boss_preview",
+    "zenkai_level",
 ]
 
 
@@ -1042,8 +1045,10 @@ def purchase():
     state  = current_state()
     item_id = request.get_json().get("item_id")
     item   = next((i for i in state.current_shop if i["id"] == item_id), None)
-    if not item or state.zeni < item["cost"]:
-        return jsonify({"error": "Cannot purchase — insufficient Zeni or item unavailable"}), 400
+    if not item:
+        return jsonify({"error": "Item not found in current shop — try refreshing"}), 400
+    if state.zeni < item["cost"]:
+        return jsonify({"error": f"Insufficient Zeni — need {item['cost']:,}, have {state.zeni:,}"}), 400
     state.zeni -= item["cost"]
     state.run_stats["items"] = state.run_stats.get("items", 0) + 1
     detail = ""
