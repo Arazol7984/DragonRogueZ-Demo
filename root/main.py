@@ -339,8 +339,8 @@ def _get_modifier_pool(wave):
 ALL_SHOP_ITEMS = {
     # ── Core items ──────────────────────────────────────────────────────────
     "senzu":          {"name": "Senzu Bean",          "desc": "Fully restores HP and clears all debuffs.",                           "base_cost": 120},
-    "gravity_x10":    {"name": "10x Gravity",         "desc": "+12% of your current PL. Costs 10% HP.",                             "base_cost": 180},
-    "gravity_x100":   {"name": "100x Gravity",        "desc": "+25% of your current PL. Large spike.",                              "base_cost": 450},
+    "gravity_x10":    {"name": "10x Gravity",         "desc": "Gain PL at the cost of some HP. Amount shown when offered.",         "base_cost": 180},
+    "gravity_x100":   {"name": "100x Gravity",        "desc": "Large PL surge. No HP cost. Amount shown when offered.",              "base_cost": 450},
     "scouter_v3":     {"name": "Prototype Scouter",   "desc": "+15% Crit Chance.",                                                  "base_cost": 350},
     "ki_overdrive":   {"name": "Ki Overdrive",        "desc": "Doubles Ki gain per action.",                                        "base_cost": 250},
     "fruit_tree":     {"name": "Fruit of Might",      "desc": "+10% permanent damage output.",                                      "base_cost": 500},
@@ -353,20 +353,20 @@ ALL_SHOP_ITEMS = {
     "spirit_water":   {"name": "Ultra Divine Water",  "desc": "Randomly boosts one stat (PL, HP, Crit, Dodge, or Def Pen).",        "base_cost": 400},
     "yardrat_manual": {"name": "Yardrat Secret",      "desc": "+10% Dodge and +2 Ki Regen.",                                        "base_cost": 500},
     # ── Roguelite items (trade-offs) ─────────────────────────────────────────
-    "heart_cure":          {"name": "Curse Antidote",          "desc": "Remove ALL active curses and restore 25% HP.",                        "base_cost": 300},
+    "heart_cure":          {"name": "Curse Antidote",          "desc": "Remove ALL active curses and restore HP. Amount shown when offered.", "base_cost": 300},
     "master_seal":         {"name": "Roshi's Power Seal",      "desc": "+3 Ki Regen and +10% Crit Chance.",                                   "base_cost": 420},
     "android_core":        {"name": "Android Power Core",      "desc": "Immune to curses permanently. Ki Regen -3/turn.",                     "base_cost": 650},
     "baba_shop":           {"name": "Baba's Mystery Box",      "desc": "Gamble: random rare reward. One use per run.",                        "base_cost": 200, "one_time": True},
     "weighted_gi":         {"name": "Weighted Training Gi",    "desc": "Ki Regen halved. Kill PL gain doubled. MAX x4 stacks.",               "base_cost": 0, "base_cost_calc": True},
-    "vitality_surge":      {"name": "Vitality Surge",          "desc": "Restore 40% HP now. Max HP -800 permanently.",                        "base_cost": 50},
+    "vitality_surge":      {"name": "Vitality Surge",          "desc": "Restore HP now. Max HP -800 permanently. Amount shown when offered.", "base_cost": 50},
     # ── Dragon Ball wishes (cost 0, only appear when dragon_balls == 7) ────────
     "wish_heal":           {"name": "⊛ WISH: Eternal Life",  "desc": "Shenron restores you to full HP and clears all curses.",              "base_cost": 0},
     "wish_power":          {"name": "⊛ WISH: True Power",    "desc": "Shenron DOUBLES your current Power Level permanently.",               "base_cost": 0},
     "wish_money":          {"name": "⊛ WISH: Infinite Zeni", "desc": "Shenron grants 5,000 Zeni and +8% Crit Chance.",                      "base_cost": 0},
     # ── New roguelite items ───────────────────────────────────────────────────
-    "senzu_fragment":      {"name": "Senzu Fragment",          "desc": "Restore 45% HP and remove 1 curse. Cheap triage.",                   "base_cost": 75},
-    "hyperbolic_chamber":  {"name": "Hyperbolic Time Chamber", "desc": "Pay 25% current HP. PL +40% of current. High risk.",                 "base_cost": 600},
-    "elder_kai_seal":      {"name": "Elder Kai's Awakening",   "desc": "+6% permanent boost to PL, Max HP, and +1 Ki Regen.",                "base_cost": 700},
+    "senzu_fragment":      {"name": "Senzu Fragment",          "desc": "Restore HP and remove 1 curse. Cheap triage. Amount shown when offered.", "base_cost": 75},
+    "hyperbolic_chamber":  {"name": "Hyperbolic Time Chamber", "desc": "Risk HP for a large PL surge. Exact amounts shown when offered.",     "base_cost": 600},
+    "elder_kai_seal":      {"name": "Elder Kai's Awakening",   "desc": "Boost PL, Max HP, and +1 Ki Regen. Exact amounts shown when offered.", "base_cost": 700},
     "geti_star":           {"name": "Geti Star Crystal",       "desc": "Each kill restores 5% max HP. Stacks up to 25%.",                    "base_cost": 500},
     "recovery_module":     {"name": "Katchin Recovery Module", "desc": "Regenerate 2% max HP each turn passively. Stacks up to 6%.",         "base_cost": 550},
 }
@@ -584,6 +584,42 @@ class GameState:
                 return {"wave": wv, "name": b["name"], "pl": b["pl"], "waves_away": ahead}
         return None
 
+    def _live_desc(self, item_id, fallback):
+        """Return a description with all percentages replaced by real flat numbers."""
+        pl, hp, mhp, bmhp = self.pl, self.hp, self.max_hp, self.base_max_hp
+        if item_id == "gravity_x10":
+            pl_gain  = int(pl * 0.12)
+            hp_cost  = max(1, int(hp * 0.10))
+            return f"Gain {pl_gain:,} PL · Costs {hp_cost:,} HP"
+        if item_id == "gravity_x100":
+            pl_gain  = int(pl * 0.25)
+            return f"Gain {pl_gain:,} PL · No HP cost"
+        if item_id == "heart_cure":
+            heal = int(mhp * 0.25)
+            return f"Remove ALL curses · Restore {heal:,} HP"
+        if item_id == "vitality_surge":
+            heal = int(mhp * 0.40)
+            return f"Restore {heal:,} HP now · Max HP -800 permanently"
+        if item_id == "senzu_fragment":
+            heal = int(mhp * 0.45)
+            return f"Restore {heal:,} HP · Remove 1 curse"
+        if item_id == "hyperbolic_chamber":
+            hp_cost = max(1, int(hp * 0.25))
+            pl_gain = int(pl * 0.40)
+            return f"Pay {hp_cost:,} HP · Gain {pl_gain:,} PL"
+        if item_id == "elder_kai_seal":
+            pl_gain  = int(pl * 0.06)
+            hp_gain  = int(bmhp * 0.06)
+            return f"PL +{pl_gain:,} · Max HP +{hp_gain:,} · Ki Regen +1"
+        if item_id == "spirit_water":
+            # Show the best and worst possible PL range
+            best = int(pl * 0.12)
+            worst = int(pl * 0.08)
+            return f"Random stat boost — PL up to {best:,}, or Crit/Dodge/Def Pen"
+        if item_id == "wish_power":
+            return f"Shenron DOUBLES your PL — gain {pl:,} PL permanently"
+        return fallback
+
     def generate_shop(self):
         # Exclude: dynamic-cost items, wish items, and one-time items already bought
         already_bought = set(self.one_time_purchased)
@@ -607,15 +643,15 @@ class GameState:
             item = ALL_SHOP_ITEMS[k].copy()
             item["id"] = k
             item["cost"] = int(item["base_cost"] * scale)
+            # Replace descriptions with live flat numbers where applicable
+            item["desc"] = self._live_desc(k, item["desc"])
             self.current_shop.append(item)
 
         # Dynamic-cost items (weighted_gi) — only if not at pl_kill_mult cap (x4)
         if self.pl_kill_mult < 4.0:
-            self.current_shop.append({
-                **ALL_SHOP_ITEMS["weighted_gi"],
-                "id": "weighted_gi",
-                "cost": int(50 + self.wave * 10),
-            })
+            gi = {**ALL_SHOP_ITEMS["weighted_gi"], "id": "weighted_gi", "cost": int(50 + self.wave * 10)}
+            gi["desc"] = self._live_desc("weighted_gi", gi["desc"])
+            self.current_shop.append(gi)
 
         # SHENRON WISHES — appear free at the front when all 7 Dragon Balls collected
         if self.dragon_balls >= 7:
@@ -623,6 +659,7 @@ class GameState:
                 w = ALL_SHOP_ITEMS[wish_key].copy()
                 w["id"]   = wish_key
                 w["cost"] = 0
+                w["desc"] = self._live_desc(wish_key, w["desc"])
                 self.current_shop.insert(0, w)
 
         # 28% chance of a random encounter offer — enrich with actual numbers
