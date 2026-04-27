@@ -542,6 +542,23 @@
       letter-spacing:3px;border-bottom:1px solid var(--border2);padding-bottom:6px;
     }
 
+    /* ── ROSTER CARD PORTRAIT ── */
+    .char-card-sprite{
+      position:absolute;
+      bottom:18px; /* sit above the name bar */
+      left:50%;
+      transform:translateX(-50%);
+      height:78%;
+      width:auto;
+      object-fit:contain;
+      image-rendering:pixelated;
+      pointer-events:none;
+    }
+    .char-card.locked .char-card-sprite{
+      opacity:0.25;
+      filter:grayscale(1);
+    }
+
     /* ═══════════════════════════════════════════════════════════════
        MOBILE  (≤ 900px — phone portrait)
     ═══════════════════════════════════════════════════════════════ */
@@ -871,6 +888,15 @@
 // ═══════════════════════════════════════════════════════════════════════════
 //  ASSETS
 // ═══════════════════════════════════════════════════════════════════════════
+// Roster portrait sprites — only for characters with sprite_set:true
+const ROSTER_SPRITES = {
+  goku:       "goku_standing-removebg-preview.png",
+  goku_namek: "goku_standing-removebg-preview.png",
+  raditz:     "raditz-standing.png",
+  nappa:      "nappa-standing.png",
+  vegeta:     "vegeta-standing-removebg-preview.png",
+};
+
 const CHAR_PASSIVES = {
   goku:       "BATTLE SENSE — Crit+5%",
   goku_namek: "MASTER OF KI — Ki Regen+3",
@@ -1369,10 +1395,16 @@ const OS = {
           card.className = "char-card" + (c.unlocked ? "" : " locked");
           card.dataset.id = c.id;
 
+          const rSprite = ROSTER_SPRITES[c.id];
+          const spriteImg = rSprite
+            ? `<img class="char-card-sprite" src="/static/images/${rSprite}" alt="${c.name}" />`
+            : "";
+
           if (!c.sprite_ready) {
             card.innerHTML = `
-              <div class="coming-soon">
-                <div style="font-size:16px;margin-bottom:4px">⬜</div>
+              ${spriteImg}
+              <div class="coming-soon" style="${rSprite ? 'background:rgba(7,9,12,.7)' : ''}">
+                <div style="font-size:14px;margin-bottom:4px">⬜</div>
                 <div>IN PROGRESS</div>
               </div>
               <div class="card-name">${c.name}<div class="card-pl">PL ${UI.fmt(c.base_pl)}</div></div>
@@ -1383,8 +1415,9 @@ const OS = {
             }
           } else if (!c.unlocked) {
             card.innerHTML = `
-              <div class="coming-soon">
-                <div style="font-size:22px;margin-bottom:4px">🔒</div>
+              ${spriteImg}
+              <div class="coming-soon" style="background:rgba(7,9,12,.72)">
+                <div style="font-size:18px;margin-bottom:4px">🔒</div>
                 <div>LOCKED</div>
               </div>
               <div class="card-name">${c.name}<div class="card-pl">PL ${UI.fmt(c.base_pl)}</div></div>
@@ -1392,6 +1425,7 @@ const OS = {
             `;
           } else {
             card.innerHTML = `
+              ${spriteImg}
               <div class="card-name">${c.name}
                 <div class="card-pl">PL ${UI.fmt(c.base_pl)}</div>
                 <div style="font-size:10px;font-family:var(--raj);color:var(--purple);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.passive || ""}</div>
@@ -1949,13 +1983,15 @@ const OS = {
         const card = document.createElement("div");
         const isCurrent = c.id === OS.char;
         card.className = "swap-card" + (isCurrent ? " active-char" : "");
+        const swapSprite = ROSTER_SPRITES[c.id];
         card.innerHTML = `
+          ${swapSprite ? `<img class="char-card-sprite" src="/static/images/${swapSprite}" alt="${c.name}" style="bottom:22px" />` : ""}
           <div class="sc-name">
             ${c.name}
             <div class="sc-passive">${c.passive || ""}</div>
-            <div style="font-size:8px;color:var(--dim)">PL ${UI.fmt(c.base_pl)}</div>
+            <div style="font-size:9px;font-family:var(--orb);color:var(--dim)">PL ${UI.fmt(c.base_pl)}</div>
           </div>
-          ${isCurrent ? `<div style="position:absolute;top:4px;right:5px;font-size:8px;color:var(--gold)">ACTIVE</div>` : ""}
+          ${isCurrent ? `<div style="position:absolute;top:4px;right:5px;font-family:var(--orb);font-size:8px;color:var(--gold)">ACTIVE</div>` : ""}
         `;
         if (!isCurrent) {
           card.addEventListener("click", () => OS.swapFighter(c.id));
