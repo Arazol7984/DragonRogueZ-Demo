@@ -213,6 +213,14 @@
         color: var(--dim);
         font-weight: 400;
       }
+      .char-card .card-start-wave {
+        font-family: var(--raj);
+        font-size: 9px;
+        color: var(--gold);
+        font-weight: 600;
+        letter-spacing: 1px;
+        margin-top: 1px;
+      }
       .char-card .card-lock {
         position: absolute;
         top: 5px;
@@ -2752,7 +2760,10 @@
                 <div style="font-size:14px;margin-bottom:4px">⬜</div>
                 <div>IN PROGRESS</div>
               </div>
-              <div class="card-name">${c.name}<div class="card-pl">PL ${UI.fmt(c.base_pl)}</div></div>
+              <div class="card-name">${c.name}
+                <div class="card-pl">PL ${UI.fmt(c.base_pl)}</div>
+                <div class="card-start-wave">STARTS WAVE ${c.start_wave}</div>
+              </div>
               ${!c.unlocked && c.unlock_by ? `<div class="card-lock">BEAT ${c.unlock_by}</div>` : ""}
             `;
                   if (!c.unlocked && c.unlock_by) {
@@ -2765,7 +2776,10 @@
                 <div style="font-size:18px;margin-bottom:4px">🔒</div>
                 <div>LOCKED</div>
               </div>
-              <div class="card-name">${c.name}<div class="card-pl">PL ${UI.fmt(c.base_pl)}</div></div>
+              <div class="card-name">${c.name}
+                <div class="card-pl">PL ${UI.fmt(c.base_pl)}</div>
+                <div class="card-start-wave">STARTS WAVE ${c.start_wave}</div>
+              </div>
               ${c.unlock_by ? `<div class="card-lock">BEAT ${c.unlock_by}</div>` : ""}
             `;
                 } else {
@@ -2773,6 +2787,7 @@
               ${spriteImg}
               <div class="card-name">${c.name}
                 <div class="card-pl">PL ${UI.fmt(c.base_pl)}</div>
+                <div class="card-start-wave">STARTS WAVE ${c.start_wave}</div>
                 <div style="font-size:10px;font-family:var(--raj);color:var(--purple);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.passive || ""}</div>
               </div>
             `;
@@ -3459,6 +3474,7 @@
             ${c.name}
             <div class="sc-passive">${c.passive || ""}</div>
             <div style="font-size:9px;font-family:var(--orb);color:var(--dim)">PL ${UI.fmt(c.base_pl)}</div>
+            <div style="font-size:8px;font-family:var(--raj);color:var(--gold);letter-spacing:1px;margin-top:1px">STARTS W${c.start_wave}</div>
           </div>
           ${isCurrent ? `<div style="position:absolute;top:4px;right:5px;font-family:var(--orb);font-size:8px;color:var(--gold)">ACTIVE</div>` : ""}
         `;

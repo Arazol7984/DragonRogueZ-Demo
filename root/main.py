@@ -209,7 +209,7 @@ CHAR_ROSTER = {
     "raditz":     {"name": "RADITZ",        "base_pl": 1200,    "base_hp": 1500,  "sprite_set": True,  "unlock_by": "RADITZ",      "category": "RIVALS",     "saga": "SAIYAN", "passive": "ELITE INSTINCTS — Dodge+12%, Crit+8%"},
     "nappa":      {"name": "NAPPA",         "base_pl": 4000,    "base_hp": 3500,  "sprite_set": True,  "unlock_by": "NAPPA",       "category": "RIVALS",     "saga": "SAIYAN", "passive": "GREAT APE — Max HP+1500"},
     "vegeta":     {"name": "VEGETA",        "base_pl": 18000,   "base_hp": 5000,  "sprite_set": True,  "unlock_by": "VEGETA",      "category": "RIVALS",     "saga": "SAIYAN", "passive": "ELITE PRIDE — Dmg+10%, Crit+10%"},
-    "goku_namek": {"name": "GOKU · NAMEK",  "base_pl": 5000,    "base_hp": 1200,  "sprite_set": True,  "unlock_by": None,          "category": "Z-WARRIORS", "saga": "NAMEK",  "passive": "MASTER OF KI — Ki Regen+3"},
+    "goku_namek": {"name": "GOKU · NAMEK",  "base_pl": 30000,   "base_hp": 1200,  "sprite_set": True,  "unlock_by": None,          "category": "Z-WARRIORS", "saga": "NAMEK",  "passive": "MASTER OF KI — Ki Regen+3"},
     "dodoria":    {"name": "DODORIA",       "base_pl": 22000,   "base_hp": 4000,  "sprite_set": False, "unlock_by": "DODORIA",     "category": "RIVALS",     "saga": "NAMEK",  "passive": "BRUTE FORCE — Armor+150, Max HP+1000"},
     "zarbon":     {"name": "ZARBON",        "base_pl": 23000,   "base_hp": 4500,  "sprite_set": False, "unlock_by": "ZARBON",      "category": "RIVALS",     "saga": "NAMEK",  "passive": "BEAUTIFUL WARRIOR — Dodge+8%, Crit+8%"},
     "guldo":      {"name": "GULDO",         "base_pl": 11000,   "base_hp": 3000,  "sprite_set": False, "unlock_by": "GULDO",       "category": "RIVALS",     "saga": "NAMEK",  "passive": "TIME FREEZE — Ki Regen+5, Dodge+10%"},
@@ -218,6 +218,29 @@ CHAR_ROSTER = {
     "jeice":      {"name": "JEICE",         "base_pl": 67000,   "base_hp": 7000,  "sprite_set": False, "unlock_by": "JEICE",       "category": "RIVALS",     "saga": "NAMEK",  "passive": "CRUSHER BALL — Dmg+12%, Ki Regen+2"},
     "ginyu":      {"name": "CAPTAIN GINYU", "base_pl": 120000,  "base_hp": 9000,  "sprite_set": False, "unlock_by": "GINYU",       "category": "RIVALS",     "saga": "NAMEK",  "passive": "BODY CHANGE — All stats +8%"},
     "frieza":     {"name": "FRIEZA",        "base_pl": 6000000, "base_hp": 15000, "sprite_set": False, "unlock_by": "FRIEZA 100%", "category": "RIVALS",     "saga": "NAMEK",  "passive": "EMPEROR'S WILL — Dmg+20%, Crit+15%"},
+}
+
+# Starting wave for each character — reflects where they enter the story.
+# The PL they bring is already set in CHAR_ROSTER["base_pl"].
+CHAR_START_WAVE = {
+    "goku":       1,
+    "tien":       1,
+    "yamcha":     1,
+    "piccolo":    1,
+    "krillin":    1,
+    "chiaotzu":   1,
+    "raditz":     11,   # enters after Raditz boss (wave 10)
+    "nappa":      21,   # enters after Nappa boss (wave 20)
+    "vegeta":     31,   # enters after Vegeta boss (wave 30)
+    "goku_namek": 31,   # Namek Saga starts at wave 31
+    "dodoria":    36,   # enters after Dodoria boss (wave 35)
+    "zarbon":     41,   # enters after Zarbon boss (wave 40)
+    "guldo":      51,   # enters after Guldo boss (wave 50)
+    "recoome":    54,   # enters after Recoome boss (wave 53)
+    "burter":     56,   # enters after Burter boss (wave 55)
+    "jeice":      59,   # enters after Jeice boss (wave 58)
+    "ginyu":      61,   # enters after Ginyu boss (wave 60)
+    "frieza":     71,   # enters at Frieza Saga (can't start past wave 100)
 }
 
 MOVES = {
@@ -838,6 +861,7 @@ def get_roster():
             "category":     cdata["category"],
             "saga":         cdata.get("saga", "SAIYAN"),
             "passive":      cdata.get("passive", ""),
+            "start_wave":   CHAR_START_WAVE.get(char_id, 1),
         })
     return jsonify({
         "roster":     roster,
@@ -859,12 +883,13 @@ def select_char():
         return jsonify({"error": "Character not unlocked"}), 403
     state = current_state()
     state.reset(char)
-    # Namek Saga Goku starts mid-saga at wave 30 with 30,000 PL
-    if char == "goku_namek":
-        state.wave = 30
-        state.pl   = 30000
+    # Apply the canonical starting wave for this character.
+    # base_pl is already set by reset() from CHAR_ROSTER, so PL matches lore.
+    start_wave = CHAR_START_WAVE.get(char, 1)
+    if start_wave > 1:
+        state.wave = start_wave
         state.update_stats()
-        state.hp   = state.max_hp  # refresh HP to new max after PL bump
+        state.hp   = state.max_hp  # full HP at their true starting PL
         state.enemy = state.spawn_enemy()
     clear_game_state(ip)      # wipe any old saved run for this IP
     save_game_state(state)    # save the fresh run immediately
