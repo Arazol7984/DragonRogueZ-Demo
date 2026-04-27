@@ -203,32 +203,42 @@ ENEMY_POOLS = {
 }
 
 ENEMY_MODIFIERS = {
-    "NONE":      {"hp_mult": 1.0, "pl_mult": 1.0, "dodge": 0.0,  "dmg_mult": 1.0, "armor": 0},
-    "ALPHA":     {"hp_mult": 1.3, "pl_mult": 1.3, "dodge": 0.0,  "dmg_mult": 1.0, "armor": 0},
-    "SWIFT":     {"hp_mult": 1.0, "pl_mult": 1.0, "dodge": 0.25, "dmg_mult": 1.0, "armor": 0},
-    "ARMORED":   {"hp_mult": 1.2, "pl_mult": 1.0, "dodge": 0.0,  "dmg_mult": 0.9, "armor": 150},
-    "BERSERKER": {"hp_mult": 1.0, "pl_mult": 1.2, "dodge": 0.0,  "dmg_mult": 1.4, "armor": 0},
+    "NONE":      {"hp_mult": 1.0, "pl_mult": 1.0, "dodge": 0.0,  "dmg_mult": 1.0,  "armor": 0},
+    "ALPHA":     {"hp_mult": 1.3, "pl_mult": 1.3, "dodge": 0.0,  "dmg_mult": 1.0,  "armor": 0},
+    "SWIFT":     {"hp_mult": 1.0, "pl_mult": 1.0, "dodge": 0.25, "dmg_mult": 1.0,  "armor": 0},
+    "ARMORED":   {"hp_mult": 1.2, "pl_mult": 1.0, "dodge": 0.0,  "dmg_mult": 0.9,  "armor": 150},
+    "BERSERKER": {"hp_mult": 1.0, "pl_mult": 1.2, "dodge": 0.0,  "dmg_mult": 1.4,  "armor": 0},
+    "FRENZIED":  {"hp_mult": 1.0, "pl_mult": 1.5, "dodge": 0.05, "dmg_mult": 1.35, "armor": 0},
 }
 
 # Modifier → (curse_id, application_chance)
 MODIFIER_CURSE = {
-    "BERSERKER": ("WEAKENED",   0.35),
-    "ARMORED":   ("SUPPRESSED", 0.25),
-    "SWIFT":     ("RATTLED",    0.30),
-    "ALPHA":     ("BLEEDING",   0.20),
+    "BERSERKER": ("WEAKENED",     0.35),
+    "ARMORED":   ("SUPPRESSED",   0.25),
+    "SWIFT":     ("RATTLED",      0.30),
+    "ALPHA":     ("BLEEDING",     0.20),
+    "FRENZIED":  ("DEMORALIZED",  0.40),
 }
 
 CURSES = {
-    "SUPPRESSED": {"label": "KI SUPPRESSED", "desc": "Ki Regen halved.", "duration": 3, "color": "blue"},
-    "WEAKENED":   {"label": "WEAKENED",      "desc": "Outgoing damage -20%.", "duration": 3, "color": "dim"},
-    "BLEEDING":   {"label": "BLEEDING",      "desc": "Lose 3% max HP each action.", "duration": 4, "color": "red"},
-    "RATTLED":    {"label": "RATTLED",       "desc": "Crit Chance reduced to 0%.", "duration": 2, "color": "gold"},
+    "SUPPRESSED":  {"label": "KI SUPPRESSED", "desc": "Ki Regen halved.",              "duration": 3, "color": "blue"},
+    "WEAKENED":    {"label": "WEAKENED",      "desc": "Outgoing damage -20%.",          "duration": 3, "color": "dim"},
+    "BLEEDING":    {"label": "BLEEDING",      "desc": "Lose 3% max HP each action.",    "duration": 4, "color": "red"},
+    "RATTLED":     {"label": "RATTLED",       "desc": "Crit Chance reduced to 0%.",     "duration": 2, "color": "gold"},
+    "DEMORALIZED": {"label": "DEMORALIZED",   "desc": "Damage output -25% for 3 turns.","duration": 3, "color": "dim"},
 }
 
-_MODIFIER_POOL = (
-    ["NONE"] * 40 + ["ALPHA"] * 20 + ["SWIFT"] * 15 +
-    ["ARMORED"] * 15 + ["BERSERKER"] * 10
-)
+def _get_modifier_pool(wave):
+    """Wave-scaled enemy modifier pool — later waves feature more dangerous variants."""
+    if wave >= 50:
+        return (["NONE"]*10 + ["ALPHA"]*20 + ["SWIFT"]*15 +
+                ["ARMORED"]*15 + ["BERSERKER"]*15 + ["FRENZIED"]*25)
+    elif wave >= 25:
+        return (["NONE"]*25 + ["ALPHA"]*20 + ["SWIFT"]*15 +
+                ["ARMORED"]*15 + ["BERSERKER"]*15 + ["FRENZIED"]*10)
+    else:
+        return (["NONE"]*40 + ["ALPHA"]*20 + ["SWIFT"]*15 +
+                ["ARMORED"]*15 + ["BERSERKER"]*10)
 
 ALL_SHOP_ITEMS = {
     # ── Core items ──────────────────────────────────────────────────────────
@@ -247,21 +257,29 @@ ALL_SHOP_ITEMS = {
     "spirit_water":   {"name": "Ultra Divine Water",  "desc": "Randomly boosts one stat significantly.",                "base_cost": 400},
     "yardrat_manual": {"name": "Yardrat Secret",      "desc": "+20% Dodge and Ki Regen boost.",                         "base_cost": 500},
     # ── Roguelite items (trade-offs) ─────────────────────────────────────────
-    "heart_cure":     {"name": "Curse Antidote",      "desc": "Remove ALL active curses and restore 25% HP.",           "base_cost": 300},
-    "master_seal":    {"name": "Roshi's Power Seal",  "desc": "+3 Ki Regen and +10% Crit Chance.",                      "base_cost": 420},
-    "android_core":   {"name": "Android Power Core",  "desc": "Immune to curses permanently. Ki Regen -3/turn.",         "base_cost": 650},
-    "baba_shop":      {"name": "Baba's Mystery Box",  "desc": "Gamble: random rare reward. High risk, high reward.",     "base_cost": 200},
-    "weighted_gi":    {"name": "Weighted Training Gi","desc": "Ki Regen halved. Kill PL gain doubled for the run.",      "base_cost": 0,   "base_cost_calc": True},
-    "vitality_surge": {"name": "Vitality Surge",      "desc": "Restore 40% HP now. Max HP -800 permanently.",           "base_cost": 50},
+    "heart_cure":          {"name": "Curse Antidote",          "desc": "Remove ALL active curses and restore 25% HP.",              "base_cost": 300},
+    "master_seal":         {"name": "Roshi's Power Seal",      "desc": "+3 Ki Regen and +10% Crit Chance.",                         "base_cost": 420},
+    "android_core":        {"name": "Android Power Core",      "desc": "Immune to curses permanently. Ki Regen -3/turn.",            "base_cost": 650},
+    "baba_shop":           {"name": "Baba's Mystery Box",      "desc": "Gamble: random rare reward. High risk, high reward.",        "base_cost": 200},
+    "weighted_gi":         {"name": "Weighted Training Gi",    "desc": "Ki Regen halved. Kill PL gain doubled for the run.",         "base_cost": 0, "base_cost_calc": True},
+    "vitality_surge":      {"name": "Vitality Surge",          "desc": "Restore 40% HP now. Max HP -800 permanently.",              "base_cost": 50},
+    # ── New roguelite items ───────────────────────────────────────────────────
+    "senzu_fragment":      {"name": "Senzu Fragment",          "desc": "Restore 45% HP and remove 1 curse. Cheap triage.",          "base_cost": 75},
+    "hyperbolic_chamber":  {"name": "Hyperbolic Time Chamber", "desc": "Pay 25% current HP now. PL +55% of current. High risk.",    "base_cost": 600},
+    "elder_kai_seal":      {"name": "Elder Kai's Awakening",   "desc": "+8% permanent boost to PL, Max HP, and +1 Ki Regen.",       "base_cost": 700},
+    "geti_star":           {"name": "Geti Star Crystal",       "desc": "Each kill restores 5% max HP. Stacks up to 25%.",           "base_cost": 500},
+    "recovery_module":     {"name": "Katchin Recovery Module", "desc": "Regenerate 2% max HP each turn passively. Stacks.",         "base_cost": 550},
 }
 
 ENCOUNTER_POOL = [
-    {"id": "roshi",     "title": "MASTER ROSHI ENCOUNTER",  "desc": "Pay 20% of current HP to gain 30% Power Level instantly.", "btn": "TRAIN (PAY 20% HP)", "effect": "roshi_train"},
-    {"id": "baba",      "title": "FORTUNETELLER BABA",      "desc": "Gamble 40% of your Zeni. 55% chance to double it, 45% chance to lose it.", "btn": "PLACE YOUR BET", "effect": "baba_wager"},
-    {"id": "yardrat",   "title": "YARDRAT BODY TECHNIQUE",  "desc": "Lose 500 Max HP permanently. Gain +22% Dodge Chance.",     "btn": "LEARN TECHNIQUE", "effect": "yardrat_deal"},
-    {"id": "weighted",  "title": "KING KAI'S CHALLENGE",    "desc": "Ki Regen halved for the rest of the run. Kill PL gain doubled.", "btn": "ACCEPT CHALLENGE", "effect": "weighted_training"},
-    {"id": "korin",     "title": "KORIN'S SENZU GIFT",      "desc": "Pay 400 Zeni for an immediate 50% HP restore.",           "btn": "PAY 400 Z",      "effect": "korin_heal"},
-    {"id": "oracle",    "title": "ORACLE'S REVELATION",     "desc": "Free intel: learn the exact wave and power of the next boss.", "btn": "VIEW INTEL",  "effect": "reveal_next"},
+    {"id": "roshi",      "title": "MASTER ROSHI ENCOUNTER",   "desc": "Pay 20% of current HP to gain 30% Power Level instantly.",                            "btn": "TRAIN (PAY 20% HP)",  "effect": "roshi_train"},
+    {"id": "baba",       "title": "FORTUNETELLER BABA",       "desc": "Gamble 40% of your Zeni. 55% chance to double it, 45% chance to lose it.",           "btn": "PLACE YOUR BET",      "effect": "baba_wager"},
+    {"id": "yardrat",    "title": "YARDRAT BODY TECHNIQUE",   "desc": "Lose 500 Max HP permanently. Gain +22% Dodge Chance.",                               "btn": "LEARN TECHNIQUE",     "effect": "yardrat_deal"},
+    {"id": "weighted",   "title": "KING KAI'S CHALLENGE",     "desc": "Ki Regen halved for the rest of the run. Kill PL gain doubled.",                     "btn": "ACCEPT CHALLENGE",    "effect": "weighted_training"},
+    {"id": "korin",      "title": "KORIN'S SENZU GIFT",       "desc": "Pay 400 Zeni for an immediate 50% HP restore.",                                      "btn": "PAY 400 Z",           "effect": "korin_heal"},
+    {"id": "oracle",     "title": "ORACLE'S REVELATION",      "desc": "Free intel: learn the exact wave and power of the next boss.",                        "btn": "VIEW INTEL",          "effect": "reveal_next"},
+    {"id": "hyperbolic", "title": "HYPERBOLIC TIME CHAMBER",  "desc": "A full year of training compressed. Lose 30% current HP. Gain 65% PL instantly.",    "btn": "ENTER CHAMBER",       "effect": "hyperbolic_train"},
+    {"id": "bubbles",    "title": "KING KAI'S PLANET",        "desc": "Train with Bubbles the monkey. Pay 300 Zeni. Permanently gain +6% Dodge Chance.",    "btn": "TRAIN WITH BUBBLES",  "effect": "bubbles_train"},
 ]
 
 
@@ -315,6 +333,10 @@ class GameState:
         self.pending_encounter   = None  # encounter offer dict or None
         self.next_boss_preview   = None  # {wave, name, pl, waves_away} or None
         self.run_stats           = {"kills": 0, "dmg_dealt": 0, "dmg_taken": 0, "items": 0}
+        # Streak & passives
+        self.kill_streak         = 0     # consecutive kills without being hit
+        self.hp_on_kill          = 0.0   # fraction of max HP restored on each kill
+        self.hp_regen            = 0.0   # fraction of max HP regenerated each turn
         self.enemy               = self.spawn_enemy()
 
     def update_stats(self):
@@ -355,7 +377,7 @@ class GameState:
                 "unlock": None, "grants": None,
             }
         template = random.choice(pool["minions"])
-        mod_key  = random.choice(_MODIFIER_POOL)
+        mod_key  = random.choice(_get_modifier_pool(self.wave))
         mod      = ENEMY_MODIFIERS[mod_key]
         hp = int((template["base_hp"] + self.wave * template["hp_scale"]) * mod["hp_mult"])
         pl = int((template["base_pl"] * (template["pl_scale"] ** (self.wave - 1))) * mod["pl_mult"])
@@ -452,11 +474,23 @@ init_db()
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _enemy_attack(state):
+    """Returns (msg, game_over, curse_applied, special_move_name)."""
     if random.random() < state.dodge_chance:
-        return f"{state.enemy['name']} missed!", False, None
-    e_base = state.enemy["pl"] * 0.07
-    if state.enemy.get("boss"):
+        state.kill_streak += 1  # evaded — streak continues
+        return f"{state.enemy['name']} missed!", False, None, None
+
+    is_boss = state.enemy.get("boss", False)
+    e_base  = state.enemy["pl"] * 0.07
+    if is_boss:
         e_base *= 1.25
+
+    # Boss signature move (22% chance for 1.5× base damage)
+    special_move = None
+    if is_boss and random.random() < 0.22:
+        e_base      *= 1.5
+        boss_short   = state.enemy["name"].split()[0]
+        special_move = f"{boss_short}'s SIGNATURE MOVE"
+
     dmg_mult = state.enemy.get("dmg_mult", 1.0)
     e_dmg = int(e_base * dmg_mult * state.defense_mod * state.transform_def_mult) - state.flat_reduction
     if state.is_guarding:
@@ -464,6 +498,7 @@ def _enemy_attack(state):
     e_dmg = max(20, e_dmg)
     state.hp = max(0, state.hp - e_dmg)
     state.run_stats["dmg_taken"] = state.run_stats.get("dmg_taken", 0) + e_dmg
+    state.kill_streak = 0  # being hit breaks the streak
 
     # Curse application from enemy modifier
     curse_applied = None
@@ -479,7 +514,11 @@ def _enemy_attack(state):
                 })
                 curse_applied = cd["label"]
 
-    return f"{state.enemy['name']} counter-attacks for {e_dmg:,}!", state.hp <= 0, curse_applied
+    if special_move:
+        msg = f"⚡ {special_move} — {e_dmg:,} damage!"
+    else:
+        msg = f"{state.enemy['name']} counter-attacks for {e_dmg:,}!"
+    return msg, state.hp <= 0, curse_applied, special_move
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -542,6 +581,11 @@ def battle_action():
     data  = request.get_json()
     skill = data.get("skill", "jab")
 
+    # ── Passive HP regen (before everything else) ────────────────────────────
+    if state.hp_regen > 0:
+        regen_amt = max(1, int(state.max_hp * state.hp_regen))
+        state.hp  = min(state.max_hp, state.hp + regen_amt)
+
     # ── Curse tick ───────────────────────────────────────────────────────────
     curse_tick_msgs = []
     next_curses = []
@@ -560,7 +604,6 @@ def battle_action():
     # ── Curse-modified effective stats ────────────────────────────────────────
     eff_ki_regen = state.ki_regen // 2 if state._curse_active("SUPPRESSED") else state.ki_regen
     state.ki = min(100, state.ki + eff_ki_regen)
-
     # ── Transformation drain ──────────────────────────────────────────────────
     transform_msg = None
     if state.active_transform:
@@ -586,13 +629,14 @@ def battle_action():
     if skill == "guard":
         state.is_guarding = True
         state.ki = min(100, state.ki + int(move["ki_gain"] * state.ki_gain_mult))
-        enemy_msg, game_over, curse_applied = _enemy_attack(state)
+        enemy_msg, game_over, curse_applied, special_move = _enemy_attack(state)
         return jsonify({
             "message":       "GUARDING — incoming damage reduced 75%",
             "enemy_msg":     enemy_msg,
             "transform_msg": transform_msg,
             "curse_tick":    curse_tick_msgs,
             "curse_applied": curse_applied,
+            "special_move":  special_move,
             "player":        vars(state),
             "enemy":         state.enemy,
             "enemy_killed":  False,
@@ -603,6 +647,8 @@ def battle_action():
             "boss_preview":  None,
             "pl_gained":     0,
             "capped":        False,
+            "streak_msg":    None,
+            "kill_streak":   state.kill_streak,
         })
 
     state.is_guarding = False
@@ -612,13 +658,18 @@ def battle_action():
 
     # ── Damage calculation ────────────────────────────────────────────────────
     effective_pl    = state.pl * state.transform_mult
-    eff_outgoing    = state.outgoing_damage_mult * (0.80 if state._curse_active("WEAKENED") else 1.0)
+    eff_outgoing    = state.outgoing_damage_mult
+    if state._curse_active("WEAKENED"):     eff_outgoing *= 0.80
+    if state._curse_active("DEMORALIZED"):  eff_outgoing *= 0.75
     eff_crit        = 0.0 if state._curse_active("RATTLED") else state.crit_chance
+
+    # Kill streak damage bonus: +5% per 3 consecutive kills without being hit (max +15%)
+    streak_bonus = min(0.15, (state.kill_streak // 3) * 0.05)
 
     raw_dmg = move["base_dmg"] * (1 + effective_pl / 380)
     if state.adrenaline_scale > 0 and state.max_hp > 0:
         raw_dmg *= 1 + state.adrenaline_scale * (1 - state.hp / state.max_hp)
-    raw_dmg *= eff_outgoing
+    raw_dmg *= eff_outgoing * (1 + streak_bonus)
     final_dmg = int(raw_dmg * (1 + state.def_pen))
 
     is_crit = random.random() < eff_crit
@@ -655,12 +706,32 @@ def battle_action():
         player_msg = f"{final_dmg:,} damage dealt!"
 
     enemy_killed = state.enemy["hp"] <= 0
-    enemy_msg, game_over, curse_applied = "", False, None
+    enemy_msg, game_over, curse_applied, special_move = "", False, None, None
     zenkai_triggered = False
     pl_gained = 0
+    streak_msg = None
 
     if enemy_killed:
+        old_streak = state.kill_streak
+        state.kill_streak += 1
         state.run_stats["kills"] = state.run_stats.get("kills", 0) + 1
+
+        # Kill streak milestone messages
+        for milestone in [3, 6, 9, 12]:
+            if old_streak < milestone <= state.kill_streak:
+                pct = min(15, (state.kill_streak // 3) * 5)
+                streak_msg = f"FLAWLESS STREAK ×{state.kill_streak} — +{pct}% damage bonus active!"
+                break
+
+        # Bonus Zeni for consecutive kills
+        streak_zeni = 0
+        if state.kill_streak >= 12:
+            streak_zeni = 350
+        elif state.kill_streak >= 6:
+            streak_zeni = 200
+        elif state.kill_streak >= 3:
+            streak_zeni = 100
+
         if state.enemy.get("boss") and state.enemy.get("unlock"):
             save_unlock(state.ip, state.enemy["unlock"])
         grant = state.enemy.get("grants")
@@ -668,15 +739,25 @@ def battle_action():
             state.kaioken_unlocked = True
         elif grant == "ssj_namek" and state.char == "goku_namek":
             state.ssj_unlocked = True
-        state.zeni += 180 + state.wave * 15
+
+        # Adjusted Zeni economy (+~30% more than before)
+        state.zeni += 220 + state.wave * 20 + streak_zeni
         if state.enemy.get("boss"):
-            state.zeni += 600
+            state.zeni += 800
+
         zenkai_triggered = state.apply_zenkai()
-        pl_gained = int(state.enemy["pl"] * 0.12 * state.pl_kill_mult)
+        # Kill PL gain reduced: 0.12 → 0.07 to keep early progression tighter
+        pl_gained = int(state.enemy["pl"] * 0.07 * state.pl_kill_mult)
         state.pl += pl_gained
+
+        # HP on kill passive
+        if state.hp_on_kill > 0:
+            on_kill_heal = max(1, int(state.max_hp * state.hp_on_kill))
+            state.hp = min(state.max_hp, state.hp + on_kill_heal)
+
         state.generate_shop()
     else:
-        enemy_msg, game_over, curse_applied = _enemy_attack(state)
+        enemy_msg, game_over, curse_applied, special_move = _enemy_attack(state)
 
     return jsonify({
         "message":       player_msg,
@@ -684,6 +765,7 @@ def battle_action():
         "transform_msg": transform_msg,
         "curse_tick":    curse_tick_msgs,
         "curse_applied": curse_applied,
+        "special_move":  special_move,
         "player":        vars(state),
         "enemy":         state.enemy,
         "enemy_killed":  enemy_killed,
@@ -694,6 +776,8 @@ def battle_action():
         "boss_preview":  state.next_boss_preview,
         "pl_gained":     pl_gained,
         "capped":        hit_cap,
+        "streak_msg":    streak_msg,
+        "kill_streak":   state.kill_streak,
     })
 
 
@@ -857,6 +941,35 @@ def purchase():
         state.base_max_hp = max(200, state.base_max_hp - 800)
         state.hp = min(state.hp + heal, state.max_hp)
         detail = f"HP +{heal:,} · Max HP permanently -800"
+    elif item_id == "senzu_fragment":
+        heal = int(state.max_hp * 0.45)
+        state.hp = min(state.max_hp, state.hp + heal)
+        if state.curse_list:
+            removed_curse = state.curse_list.pop(0)
+            detail = f"HP +{heal:,} · {removed_curse['label']} removed"
+        else:
+            detail = f"HP +{heal:,} · No curses active"
+    elif item_id == "hyperbolic_chamber":
+        cost_hp = max(1, int(state.hp * 0.25))
+        if state.hp - cost_hp <= 1:
+            return jsonify({"error": "HP too low — need more HP to endure the chamber"}), 400
+        gain = int(state.pl * 0.55)
+        state.hp = max(1, state.hp - cost_hp)
+        state.pl += gain
+        detail = f"HP -{cost_hp:,} · PL +{gain:,} (55% of current)"
+    elif item_id == "elder_kai_seal":
+        pl_gain = int(state.pl * 0.08)
+        hp_gain = int(state.base_max_hp * 0.08)
+        state.pl += pl_gain
+        state.base_max_hp += hp_gain
+        state.ki_regen = min(20, state.ki_regen + 1)
+        detail = f"PL +{pl_gain:,} · Max HP +{hp_gain:,} · Ki Regen +1 → {state.ki_regen}"
+    elif item_id == "geti_star":
+        state.hp_on_kill = min(0.25, state.hp_on_kill + 0.05)
+        detail = f"Kill Heal → {round(state.hp_on_kill*100)}% max HP per kill"
+    elif item_id == "recovery_module":
+        state.hp_regen = min(0.06, state.hp_regen + 0.02)
+        detail = f"HP Regen → {round(state.hp_regen*100)}%/turn"
 
     state.update_stats()
     return jsonify({"player": vars(state), "detail": detail})
@@ -941,6 +1054,22 @@ def resolve_encounter():
         else:
             msg = "ORACLE — No major boss detected in the next 8 waves."
 
+    elif effect == "hyperbolic_train":
+        cost_hp = max(1, int(state.hp * 0.30))
+        if state.hp - cost_hp <= 1:
+            return jsonify({"error": "HP too low to endure the chamber — need more HP"}), 400
+        gain = int(state.pl * 0.65)
+        state.hp = max(1, state.hp - cost_hp)
+        state.pl += gain
+        msg = f"HYPERBOLIC TIME CHAMBER — PL +{gain:,} · HP -{cost_hp:,}"
+
+    elif effect == "bubbles_train":
+        if state.zeni < 300:
+            return jsonify({"error": "Need 300 Z to train with Bubbles"}), 400
+        state.zeni -= 300
+        state.dodge_chance = min(0.55, state.dodge_chance + 0.06)
+        msg = f"BUBBLES TRAINING — Dodge → {round(state.dodge_chance*100)}% · Cost: 300 Z"
+
     state.update_stats()
     return jsonify({"player": vars(state), "message": msg})
 
@@ -966,6 +1095,7 @@ def next_enemy():
     state.wave += 1
     state.is_guarding = False
     state.drop_transform()
+    state.kill_streak = 0   # reset per-fight streak at start of each new enemy
     state.enemy = state.spawn_enemy()
     transforms = list(CHAR_TRANSFORMS.get(state.char, {}).keys())
     return jsonify({"enemy": state.enemy, "player": vars(state), "transforms": transforms})

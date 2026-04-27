@@ -391,6 +391,7 @@
     <div class="data-line">ZENI: <span id="p-zeni-val" class="data-dim">850</span></div>
     <div class="data-line">CRIT: <span id="p-crit-val" class="data-dim">5%</span></div>
     <div class="data-line">DODGE: <span id="p-dodge-val" class="data-dim">3%</span></div>
+    <div id="streak-line" class="data-line" style="display:none">STREAK: <span id="p-streak-val" style="color:var(--gold)">0</span></div>
     <div style="font-size:12px;color:var(--dim);letter-spacing:2px;margin-top:4px">AUGMENTS</div>
     <div class="aug-list" id="aug-list"></div>
     <div id="curse-section" style="display:none">
@@ -751,20 +752,31 @@ const SKILL_NAMES = {
 };
 
 const BUFF_DESCRIPTIONS = {
-  senzu:          "Full HP restore + clears status effects.",
-  gravity_x10:    "Power Level +20% of current. HP cost: -10%.",
-  gravity_x100:   "Power Level +40% of current. Massive spike.",
-  scouter_v3:     "Critical hit chance +15%.",
-  ki_overdrive:   "All Ki gains doubled permanently.",
-  fruit_tree:     "Outgoing damage multiplier +15%.",
-  tail_regrow:    "8% lifesteal on all damage dealt.",
-  alloy_plating:  "Flat damage reduction +150 per hit.",
-  adrenaline:     "Damage scales up the lower your HP falls.",
-  prophetic_fish: "Dodge chance +12%.",
-  dende_blessing: "Max HP permanently +2,500.",
-  z_sword:        "Defense penetration +20% on all attacks.",
-  spirit_water:   "Randomly boosts one stat significantly.",
-  yardrat_manual: "Dodge +12% and Ki Regen boosted.",
+  senzu:               "Full HP restore + clears status effects.",
+  gravity_x10:         "Power Level +20% of current. HP cost: -10%.",
+  gravity_x100:        "Power Level +40% of current. Massive spike.",
+  scouter_v3:          "Critical hit chance +15%.",
+  ki_overdrive:        "All Ki gains doubled permanently.",
+  fruit_tree:          "Outgoing damage multiplier +15%.",
+  tail_regrow:         "8% lifesteal on all damage dealt.",
+  alloy_plating:       "Flat damage reduction +150 per hit.",
+  adrenaline:          "Damage scales up the lower your HP falls.",
+  prophetic_fish:      "Dodge chance +12%.",
+  dende_blessing:      "Max HP permanently +2,500.",
+  z_sword:             "Defense penetration +20% on all attacks.",
+  spirit_water:        "Randomly boosts one stat significantly.",
+  yardrat_manual:      "Dodge +12% and Ki Regen boosted.",
+  heart_cure:          "Removes ALL curses and restores 25% HP.",
+  master_seal:         "Ki Regen +3 and Crit Chance +10%.",
+  android_core:        "Permanent curse immunity. Ki Regen -3.",
+  baba_shop:           "Mystery gamble: random rare stat boost.",
+  weighted_gi:         "Ki Regen halved. Kill PL gain doubled.",
+  vitality_surge:      "Restore 40% HP. Max HP -800 permanently.",
+  senzu_fragment:      "Restore 45% HP + remove 1 curse.",
+  hyperbolic_chamber:  "Pay 25% HP. PL +55% of current.",
+  elder_kai_seal:      "+8% to PL, Max HP, and +1 Ki Regen.",
+  geti_star:           "Restore 5% max HP on every kill (stacks).",
+  recovery_module:     "Passive: +2% max HP regen per turn (stacks).",
 };
 
 // Per-character transformation table (mirrors Python CHAR_TRANSFORMS)
@@ -821,6 +833,15 @@ const UI = {
     UI.setText("wave-num",    p.wave);
     UI.setText("zeni-lbl",    `⊛ ${UI.fmt(p.zeni)}`);
     UI.setText("saga-lbl",    `${p.saga || "SAIYAN"} SAGA`);
+    // Streak display
+    const streakLine = document.getElementById("streak-line");
+    if (p.kill_streak > 0) {
+      const streakPct = Math.min(15, Math.floor(p.kill_streak / 3) * 5);
+      UI.setText("p-streak-val", `×${p.kill_streak}${streakPct > 0 ? ` (+${streakPct}% DMG)` : ""}`);
+      streakLine.style.display = "";
+    } else {
+      streakLine.style.display = "none";
+    }
 
     // Transform status panel
     const tsPanel = document.getElementById("transform-status-panel");
@@ -1178,6 +1199,10 @@ const OS = {
     if (data.pl_gained > 0) {
       UI.log(`POWER LEVEL +${UI.fmt(data.pl_gained)} absorbed`, "gold");
     }
+    // Kill streak milestone
+    if (data.streak_msg) {
+      UI.log(data.streak_msg, "gold");
+    }
     if (data.capped) {
       UI.log("ULTIMATE CAPPED — max single-hit threshold reached", "dim");
     }
@@ -1197,7 +1222,12 @@ const OS = {
     // ── Enemy counter-attack (500ms AFTER player result) ──────────────
     if (data.enemy_msg) {
       await new Promise(r => setTimeout(r, 500));
-      UI.log(data.enemy_msg, "red");
+      // Boss signature move gets gold highlight, normal attack is red
+      if (data.special_move) {
+        UI.log(data.enemy_msg, "gold");
+      } else {
+        UI.log(data.enemy_msg, "red");
+      }
       if (data.curse_applied) {
         UI.log(`CURSED: ${data.curse_applied}!`, "red");
       }
@@ -1400,6 +1430,8 @@ const OS = {
         <div class="status-stat">DEF PEN <span>${Math.round(p.def_pen*100)}%</span></div>
         <div class="status-stat">DMG MULT <span>×${p.outgoing_damage_mult.toFixed(2)}</span></div>
         <div class="status-stat">KI REGEN <span>+${p.ki_regen}/turn</span></div>
+        <div class="status-stat">KILL STREAK <span>${p.kill_streak > 0 ? `×${p.kill_streak} (+${Math.min(15,Math.floor(p.kill_streak/3)*5)}% dmg)` : "—"}</span></div>
+        <div class="status-stat">KILLS THIS RUN <span>${p.run_stats?.kills ?? 0}</span></div>
       </div>`;
     col1.innerHTML = statsHtml;
 
@@ -1428,15 +1460,19 @@ const OS = {
     // Augments
     let augHtml = `<div class="status-section"><div class="status-section-title">ACTIVE AUGMENTS</div>`;
     const augEntries = [];
-    if (p.crit_chance  > 0.05)          augEntries.push({n:"Prototype Scouter",  d:BUFF_DESCRIPTIONS.scouter_v3});
-    if (p.ki_gain_mult > 1.0)           augEntries.push({n:"Ki Overdrive",        d:BUFF_DESCRIPTIONS.ki_overdrive});
-    if (p.outgoing_damage_mult > 1.0)   augEntries.push({n:"Fruit of Might",      d:BUFF_DESCRIPTIONS.fruit_tree});
-    if (p.lifesteal > 0)                augEntries.push({n:"Ancient Ointment",    d:`Lifesteal: ${Math.round(p.lifesteal*100)}%`});
-    if (p.flat_reduction > 0)           augEntries.push({n:"Katchin Armor",       d:`Flat reduction: ${p.flat_reduction}`});
-    if (p.adrenaline_scale > 0)         augEntries.push({n:"Saiyan Pride",        d:BUFF_DESCRIPTIONS.adrenaline});
-    if (p.dodge_chance > 0.03)          augEntries.push({n:"Dodge Boost",         d:`Dodge: ${Math.round(p.dodge_chance*100)}%`});
-    if (p.def_pen > 0)                  augEntries.push({n:"Z-Sword Fragment",    d:`Def Pen: ${Math.round(p.def_pen*100)}%`});
-    if (p.ki_regen  > 8)               augEntries.push({n:"Yardrat Secret",      d:`Ki Regen: +${p.ki_regen}/turn`});
+    if (p.crit_chance  > 0.05)          augEntries.push({n:"Prototype Scouter",         d:`Crit: ${Math.round(p.crit_chance*100)}%`});
+    if (p.ki_gain_mult > 1.0)           augEntries.push({n:"Ki Overdrive",              d:BUFF_DESCRIPTIONS.ki_overdrive});
+    if (p.outgoing_damage_mult > 1.0)   augEntries.push({n:"Fruit of Might",            d:`Dmg ×${p.outgoing_damage_mult.toFixed(2)}`});
+    if (p.lifesteal > 0)                augEntries.push({n:"Ancient Ointment",          d:`Lifesteal: ${Math.round(p.lifesteal*100)}%`});
+    if (p.flat_reduction > 0)           augEntries.push({n:"Katchin Armor",             d:`Flat reduction: ${p.flat_reduction}`});
+    if (p.adrenaline_scale > 0)         augEntries.push({n:"Saiyan Pride",              d:BUFF_DESCRIPTIONS.adrenaline});
+    if (p.dodge_chance > 0.03)          augEntries.push({n:"Dodge Boost",               d:`Dodge: ${Math.round(p.dodge_chance*100)}%`});
+    if (p.def_pen > 0)                  augEntries.push({n:"Z-Sword Fragment",          d:`Def Pen: ${Math.round(p.def_pen*100)}%`});
+    if (p.ki_regen  > 8)               augEntries.push({n:"Ki Regen Boost",            d:`Ki Regen: +${p.ki_regen}/turn`});
+    if (p.curse_immune)                 augEntries.push({n:"Android Power Core",        d:"Curse immune"});
+    if (p.hp_on_kill > 0)              augEntries.push({n:"Geti Star Crystal",         d:`Kill Heal: ${Math.round(p.hp_on_kill*100)}% HP/kill`});
+    if (p.hp_regen > 0)               augEntries.push({n:"Katchin Recovery Module",   d:`Regen: ${Math.round(p.hp_regen*100)}%/turn`});
+    if (p.pl_kill_mult > 1.0)          augEntries.push({n:"Kill PL Multiplier",        d:`×${p.pl_kill_mult.toFixed(1)} PL per kill`});
     if (!augEntries.length) {
       augHtml += `<div class="aug-badge">No augments active yet.</div>`;
     } else {
