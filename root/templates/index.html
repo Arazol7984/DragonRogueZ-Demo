@@ -198,17 +198,62 @@
       position:relative;padding:0 30px;
       background:radial-gradient(ellipse at 50% 100%,rgba(0,40,20,.6) 0%,rgba(7,9,12,.2) 70%);
     }
-    .fighter-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+    .fighter-wrap{
+      display:flex;flex-direction:column;align-items:center;gap:10px;
+      position:relative;
+    }
+    /* Aura backdrop — rendered behind the sprite via ::before */
+    .fighter-wrap::before{
+      content:"";
+      position:absolute;
+      inset:-30px;
+      border-radius:50%;
+      opacity:0;
+      pointer-events:none;
+      z-index:0;
+      transition:opacity .4s;
+    }
+    .fighter-wrap.kaioken-aura::before{
+      background:radial-gradient(ellipse at 50% 70%,
+        rgba(255,55,0,.55) 0%, rgba(255,80,0,.25) 40%, transparent 70%);
+      opacity:1;
+      animation:aura-pulse-red .75s ease-in-out infinite alternate;
+    }
+    .fighter-wrap.ssj-aura::before{
+      background:radial-gradient(ellipse at 50% 70%,
+        rgba(255,220,0,.6) 0%, rgba(255,180,0,.25) 40%, transparent 70%);
+      opacity:1;
+      animation:aura-pulse-gold .8s ease-in-out infinite alternate;
+    }
+    @keyframes aura-pulse-red{
+      0%  {transform:scale(.9); opacity:.55}
+      100%{transform:scale(1.2); opacity:1}
+    }
+    @keyframes aura-pulse-gold{
+      0%  {transform:scale(.9); opacity:.6}
+      100%{transform:scale(1.25); opacity:1}
+    }
+
     .fighter-sprite{
       width:210px;height:280px;object-fit:contain;
       transition:filter .2s,transform .18s ease-out;
       image-rendering:pixelated;
+      position:relative;z-index:1;
     }
+    /* Pulsing glow on the sprite itself */
     .fighter-sprite.kaioken{
-      filter:drop-shadow(0 0 24px rgba(255,80,0,.95)) brightness(1.35)!important;
+      animation:kaioken-glow .7s ease-in-out infinite alternate!important;
     }
     .fighter-sprite.ssj{
-      filter:drop-shadow(0 0 30px rgba(255,230,0,1)) brightness(1.6)!important;
+      animation:ssj-glow .8s ease-in-out infinite alternate!important;
+    }
+    @keyframes kaioken-glow{
+      0%  {filter:drop-shadow(0 0 10px rgba(255,60,0,.7)) brightness(1.2)}
+      100%{filter:drop-shadow(0 0 32px rgba(255,60,0,1)) brightness(1.5)}
+    }
+    @keyframes ssj-glow{
+      0%  {filter:drop-shadow(0 0 14px rgba(255,230,0,.8)) brightness(1.4)}
+      100%{filter:drop-shadow(0 0 40px rgba(255,230,0,1)) brightness(1.75)}
     }
     #enemy-bar-wrap{width:260px}
     #e-name-lbl{
@@ -223,7 +268,7 @@
 
     /* Hit / hurt animations */
     .anim-e-hit{animation:hit-shake .35s ease}
-    .anim-p-hurt{animation:p-hurt .45s ease;transition:none!important}
+    .anim-p-hurt{animation:p-hurt .45s ease!important;transition:none!important}
     @keyframes hit-shake{
       0%  {transform:translateX(0)}
       25% {transform:translateX(-14px)}
@@ -1263,6 +1308,7 @@ const UI = {
     // Transform status panel
     const tsPanel = document.getElementById("transform-status-panel");
     const pSprite = document.getElementById("p-sprite");
+    const pWrap = pSprite.parentElement;
     if (p.active_transform) {
       tsPanel.style.display = "block";
       const tList = CHAR_TRANSFORMS_UI[OS.char] || [];
@@ -1271,12 +1317,15 @@ const UI = {
       UI.setText("ts-drain-lbl", tData ? tData.drain : "—");
       if (p.active_transform === "super_saiyan") {
         pSprite.classList.remove("kaioken"); pSprite.classList.add("ssj");
+        pWrap.classList.remove("kaioken-aura"); pWrap.classList.add("ssj-aura");
       } else {
         pSprite.classList.remove("ssj"); pSprite.classList.add("kaioken");
+        pWrap.classList.remove("ssj-aura"); pWrap.classList.add("kaioken-aura");
       }
     } else {
       tsPanel.style.display = "none";
       pSprite.classList.remove("kaioken","ssj");
+      pWrap.classList.remove("kaioken-aura","ssj-aura");
     }
 
     if (e) {
@@ -1677,6 +1726,7 @@ const OS = {
         pSprite.src = `/static/images/${charData.fainted || "goku_fainted-removebg-preview.png"}`;
         pSprite.style.transform = "";
         pSprite.classList.remove("kaioken","ssj");
+        pSprite.parentElement.classList.remove("kaioken-aura","ssj-aura");
         await new Promise(r => setTimeout(r, 1600));
         OS.showDefeat(data.player);
         return;
